@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Démocratie — simulation politique</title>
+<style>
+/* =====================================================================
+   DÉMOCRATIE — Feuille de style
+   Palette sobre bleu / blanc / rouge, typographie lisible.
+   ===================================================================== */
+:root{
+  --navy:#1c2a4a; --navy-2:#2a3b63; --navy-3:#3c5089;
+  --paper:#f6f5f1; --white:#ffffff; --ink:#1d2433; --muted:#6b7280;
+  --red:#b3343c; --red-soft:#f4e3e4; --blue-soft:#e6ebf5;
+  --good:#2f855a; --mid:#c98a0c; --bad:#c0392b;
+  --line:#dcdfe6; --shadow:0 2px 10px rgba(20,30,60,.08);
+  --radius:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--paper); color:var(--ink); line-height:1.5; font-size:15px;
+}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;font-weight:700;margin:0}
+button{font:inherit;cursor:pointer}
+.hidden{display:none!important}
+
+/* ---------- Bandeau tricolore ---------- */
+.tricolore{height:5px;background:linear-gradient(90deg,var(--navy) 0 33.3%,#fff 33.3% 66.6%,var(--red) 66.6%)}
+
+/* ---------- Écran titre ---------- */
+#screen-title,#screen-end{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.title-box{background:var(--white);max-width:620px;width:100%;border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.title-inner{padding:34px 38px 30px}
+.title-box h1{font-size:46px;color:var(--navy);letter-spacing:.5px}
+.title-box h1 span{color:var(--red)}
+.subtitle{color:var(--muted);margin:4px 0 22px;font-style:italic}
+.pitch{margin:0 0 20px}
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.form-row label{font-size:13px;font-weight:600;color:var(--navy-2);text-transform:uppercase;letter-spacing:.6px}
+.form-row input{padding:9px 11px;border:1px solid var(--line);border-radius:7px;font:inherit}
+.diff-group{display:flex;gap:8px;flex-wrap:wrap}
+.diff-group label{flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:9px 11px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink);font-size:14px}
+.diff-group input{margin-right:6px}
+.diff-group label.sel{border-color:var(--navy-3);background:var(--blue-soft)}
+.diff-group small{display:block;color:var(--muted);margin-left:20px}
+.btn{border:none;border-radius:8px;padding:11px 20px;font-weight:600;transition:transform .08s,background .15s}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy-3)}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--navy-2)}
+.btn-ghost:hover{background:var(--blue-soft)}
+.title-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px;flex-wrap:wrap}
+.best{font-size:13px;color:var(--muted)}
+details.howto{margin-top:18px;font-size:14px;color:#374151}
+details.howto summary{cursor:pointer;color:var(--navy-2);font-weight:600}
+details.howto ul{padding-left:20px;margin:8px 0}
+
+/* ---------- Écran de jeu ---------- */
+#screen-game{min-height:100vh;display:flex;flex-direction:column}
+header.topbar{background:var(--navy);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.topbar h2{font-size:22px;color:#fff}
+.topbar .country{font-size:13px;opacity:.85}
+.topbar .date{margin-left:auto;text-align:right}
+.topbar .date b{font-size:17px}
+.progress{height:6px;background:rgba(255,255,255,.18);border-radius:4px;width:220px;overflow:hidden;margin-top:4px}
+.progress > div{height:100%;background:linear-gradient(90deg,#fff,#f3c3c6);transition:width .4s}
+main.layout{flex:1;display:grid;grid-template-columns:290px minmax(0,1fr) 310px;gap:18px;padding:18px;max-width:1500px;width:100%;margin:0 auto}
+.panel{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.panel h3{font-size:15px;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;font-family:inherit;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+
+/* Jauges */
+.gauge{margin-bottom:10px}
+.gauge-head{display:flex;justify-content:space-between;font-size:13.5px;align-items:baseline}
+.gauge-head .val{font-weight:700;font-variant-numeric:tabular-nums}
+.bar{height:9px;background:#eceef3;border-radius:5px;overflow:hidden;margin-top:3px;position:relative}
+.bar > div{height:100%;border-radius:5px;transition:width .5s ease,background .5s}
+.bar.zero::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#9aa3b5}
+.delta{font-size:12px;font-weight:700;margin-left:6px;opacity:0;transition:opacity .3s}
+.delta.show{opacity:1}
+.delta.up{color:var(--good)} .delta.down{color:var(--bad)}
+.sep{border:none;border-top:1px dashed var(--line);margin:12px 0}
+.poll{background:var(--blue-soft);border-radius:8px;padding:10px 12px;font-size:13.5px}
+.poll .row{display:flex;justify-content:space-between}
+.poll .split{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0 2px}
+.poll .split .me{background:var(--navy-3)} .poll .split .them{background:var(--red)}
+.warnings{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.warn{background:var(--red-soft);color:#7f1d1d;border-left:3px solid var(--red);padding:6px 9px;border-radius:5px;font-size:13px}
+.small-stat{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;margin-top:6px}
+
+/* Carte d'événement */
+.stage{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--white);border-radius:14px;box-shadow:0 6px 24px rgba(20,30,60,.10);overflow:hidden;animation:pop .35s ease}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card-head{padding:14px 22px;background:linear-gradient(90deg,var(--navy),var(--navy-2));color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cat{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;background:rgba(255,255,255,.15);padding:3px 9px;border-radius:20px}
+.counter{font-size:13px;opacity:.85}
+.card-body{padding:22px 26px 24px}
+.card-body h2{font-size:26px;color:var(--navy);margin-bottom:10px}
+.card-text{font-size:16px;color:#2b3242;margin:0 0 20px;white-space:pre-line}
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start;transition:border-color .15s,background .15s,transform .1s}
+.choice:hover{border-color:var(--navy-3);background:var(--blue-soft)}
+.choice:focus-visible{outline:2px solid var(--navy-3);outline-offset:2px}
+.choice .key{flex:none;width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.choice .lbl{font-weight:600;color:var(--ink)}
+.choice .hint{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;font-weight:400}
+.hint .u{color:var(--good)} .hint .d{color:var(--bad)}
+.outcome{font-size:16px;margin:0 0 14px;padding:12px 14px;border-left:4px solid var(--navy-3);background:var(--blue-soft);border-radius:0 8px 8px 0}
+.outcome.alert{border-left-color:var(--red);background:var(--red-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 16px}
+.chip{font-size:12.5px;padding:3px 9px;border-radius:20px;background:#eef0f4;font-weight:600}
+.chip.up{background:#e3f3ea;color:#22643f} .chip.down{background:#fbe5e3;color:#8d2a20}
+.later-note{font-size:13px;color:var(--muted);font-style:italic;margin:-6px 0 14px}
+.card-actions{display:flex;justify-content:flex-end;gap:10px}
+.summary-list{margin:0 0 16px;padding-left:20px}
+.summary-list li{margin-bottom:6px}
+.vote-bar{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:10px 0 6px;font-weight:700;color:#fff;font-size:14px}
+.vote-bar div{display:flex;align-items:center;justify-content:center;transition:width 1.2s ease}
+.toolbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+.toolbar label{cursor:pointer;user-select:none}
+
+/* Journal */
+.journal{max-height:calc(100vh - 170px);overflow-y:auto;padding-right:4px}
+.entry{font-size:13.5px;padding:8px 0;border-bottom:1px solid #eff1f5}
+.entry .when{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.entry.conseq{color:#374151}
+.entry.conseq .txt::before{content:"⏳ "}
+.entry.warn-e .txt{color:#8d2a20}
+.entry.info .txt{color:var(--navy-2);font-style:italic}
+.entry .chips{margin:4px 0 0}
+.entry .chip{font-size:11px;padding:1px 7px}
+
+/* Écran de fin */
+.end-box{max-width:760px}
+.end-box h1{font-size:38px}
+.end-kicker{text-transform:uppercase;letter-spacing:1.5px;font-size:13px;font-weight:700;color:var(--red)}
+.end-text{font-size:16px;margin:14px 0 20px}
+.end-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px}
+.end-stat{background:var(--paper);border-radius:8px;padding:9px 12px;font-size:13px}
+.end-stat b{display:block;font-size:20px;color:var(--navy)}
+.score-box{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--navy);color:#fff;border-radius:10px;padding:16px 20px;margin-bottom:18px;flex-wrap:wrap}
+.score-box .score{font-size:40px;font-weight:800;font-family:Georgia,serif}
+.score-box .rank{font-size:18px;font-family:Georgia,serif}
+.secret{border:1px dashed var(--red);background:var(--red-soft);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:14px}
+
+/* Responsive */
+@media (max-width:1100px){
+  main.layout{grid-template-columns:260px minmax(0,1fr)}
+  aside.right{grid-column:1 / -1}
+  .journal{max-height:320px}
+}
+@media (max-width:760px){
+  main.layout{grid-template-columns:1fr;padding:10px}
+  .card-body{padding:18px}
+  .card-body h2{font-size:22px}
+  .title-inner{padding:24px}
+  .title-box h1{font-size:36px}
+  .progress{width:140px}
+}
+</style>
+</head>
+<body>
+
+<!-- =================== ÉCRAN TITRE =================== -->
+<section id="screen-title">
+  <div class="title-box">
+    <div class="tricolore"></div>
+    <div class="title-inner">
+      <h1>Démo<span>cratie</span></h1>
+      <p class="subtitle">Simulation politique — 48 mois pour ne pas tout gâcher</p>
+      <p class="pitch">Vous venez d’être élu à la tête d’une jeune démocratie. Le peuple vous aime (pour l’instant), les caisses sont presque vides, l’opposition aiguise ses couteaux et vos conseillers ont tous une « idée géniale ». Tenez quatre ans, puis affrontez les urnes. Ou trouvez un moyen de vous en passer… à vos risques et périls.</p>
+      <div class="form-row">
+        <label for="in-leader">Votre nom</label>
+        <input id="in-leader" maxlength="30" value="Camille Duval">
+      </div>
+      <div class="form-row">
+        <label for="in-country">Nom du pays</label>
+        <input id="in-country" maxlength="40" value="République de Valmérie">
+      </div>
+      <div class="form-row">
+        <label>Difficulté</label>
+        <div class="diff-group" id="diff-group">
+          <label><input type="radio" name="diff" value="facile">Stagiaire<small>Crises plus douces</small></label>
+          <label class="sel"><input type="radio" name="diff" value="normal" checked>Normal<small>L’expérience prévue</small></label>
+          <label><input type="radio" name="diff" value="difficile">Realpolitik<small>Le monde est cruel</small></label>
+        </div>
+      </div>
+      <details class="howto">
+        <summary>Comment jouer ?</summary>
+        <ul>
+          <li>Chaque tour = 1 mois. Chaque mois, 1 à 3 dossiers arrivent sur votre bureau.</li>
+          <li>Chaque décision a des effets immédiats… et parfois des répercussions plusieurs mois plus tard.</li>
+          <li>Les jauges vont de 0 à 100 ; la trésorerie peut devenir négative (jusqu’à la faillite, à −60 Md).</li>
+          <li>Plus votre popularité baisse, plus l’opposition se renforce.</li>
+          <li>Les mesures autoritaires aident à court terme, mais alimentent une jauge <em>cachée</em>. Elle pèse lourd.</li>
+          <li>Au 48<sup>e</sup> mois : élection présidentielle. Le sondage du tableau de bord donne une idée de vos chances.</li>
+          <li>Raccourcis clavier : touches <b>1</b> à <b>4</b> pour choisir, <b>Entrée</b> pour continuer.</li>
+        </ul>
+      </details>
+      <div class="title-actions">
+        <span class="best" id="best-score"></span>
+        <button class="btn btn-red" id="btn-start">Prêter serment ▸</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== ÉCRAN DE JEU =================== -->
+<section id="screen-game" class="hidden">
+  <div class="tricolore"></div>
+  <header class="topbar">
+    <div>
+      <h2>Démocratie</h2>
+      <div class="country" id="hdr-country"></div>
+    </div>
+    <div class="date">
+      <div><b id="hdr-date">Janvier — An 1</b></div>
+      <div class="country" id="hdr-turn">Mois 1 / 48</div>
+      <div class="progress"><div id="hdr-progress" style="width:0%"></div></div>
+    </div>
+  </header>
+  <main class="layout">
+    <!-- Tableau de bord -->
+    <aside class="panel" id="dashboard">
+      <h3>Tableau de bord</h3>
+      <div id="gauges"></div>
+      <hr class="sep">
+      <div id="opp-gauge"></div>
+      <div class="poll" id="poll"></div>
+      <div class="small-stat"><span>💼 Caisse de campagne</span><b id="campaign-val">0</b></div>
+      <div class="warnings" id="warnings"></div>
+    </aside>
+    <!-- Scène centrale -->
+    <section class="stage">
+      <div id="card-zone"></div>
+      <div class="toolbar">
+        <label><input type="checkbox" id="toggle-advisor" checked> Notes du conseiller (tendances immédiates)</label>
+        <button class="btn btn-ghost" id="btn-quit" style="padding:5px 12px;font-size:13px">Abandonner</button>
+      </div>
+    </section>
+    <!-- Journal -->
+    <aside class="panel right">
+      <h3>Journal <span style="font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0" id="journal-count"></span></h3>
+      <div class="journal" id="journal"></div>
+    </aside>
+  </main>
+</section>
+
+<!-- =================== ÉCRAN DE FIN =================== -->
+<section id="screen-end" class="hidden">
+  <div class="title-box end-box">
+    <div class="tricolore"></div>
+    <div class="title-inner" id="end-content"></div>
+  </div>
+</section>
+
+<script>
+'use strict';
+/* =====================================================================
+   DÉMOCRATIE — Code du jeu
+   Organisation :
+     1. Utilitaires
+     2. Configuration (difficultés, constantes)
+     3. Indicateurs
+     4. Événements (données)
+     5. Moteur de jeu (logique pure, sans DOM — testable hors navigateur)
+     6. Fins de partie & score
+     7. Interface (DOM)
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. UTILITAIRES
+   --------------------------------------------------------------------- */
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const round = v => Math.round(v);
+/** Générateur pseudo-aléatoire déterministe (mulberry32) — utile pour les tests. */
+function makeRng(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+/* ---------------------------------------------------------------------
+   2. CONFIGURATION
+   --------------------------------------------------------------------- */
+const CONFIG = {
+  TURNS: 48,              // durée du mandat (mois)
+  BANKRUPTCY: -60,        // trésorerie de faillite (milliards)
+  GRACE: 4,               // pas de chute de régime avant ce tour
+  WIN_THRESHOLD: 50,      // % des voix pour être réélu
+};
+/** neg : multiplicateur des effets négatifs ; drift : usure mensuelle ; risk : multiplicateur des risques de chute */
+const DIFFICULTIES = {
+  facile:    { label: 'Stagiaire',   neg: 0.90, drift: 0.80, risk: 0.8 },
+  normal:    { label: 'Normal',      neg: 1.00, drift: 1.0, risk: 1.0 },
+  difficile: { label: 'Realpolitik', neg: 1.05, drift: 1.10, risk: 1.2 },
+};
+
+/* ---------------------------------------------------------------------
+   3. INDICATEURS
+   key   : identifiant interne
+   good  : 'high' si une valeur haute est favorable au joueur
+   La "Dérive autoritaire" (derive) et le "bonus électoral" (bonus) sont
+   des variables cachées : elles n'apparaissent pas au tableau de bord.
+   --------------------------------------------------------------------- */
+const INDICATORS = [
+  { key: 'pop',   label: 'Popularité',                 icon: '👥' },
+  { key: 'eco',   label: 'Économie',                   icon: '📈' },
+  { key: 'secu',  label: 'Sécurité / Ordre public',    icon: '🛡️' },
+  { key: 'lib',   label: 'Libertés civiles',           icon: '🗽' },
+  { key: 'integ', label: 'Intégrité',                  icon: '⚖️' },
+  { key: 'intl',  label: 'Crédibilité internationale', icon: '🌍' },
+  { key: 'inst',  label: 'Confiance des institutions', icon: '🏛️' },
+  { key: 'treso', label: 'Trésorerie',                 icon: '💰', money: true },
+];
+const LABELS = {
+  pop: 'Popularité', eco: 'Économie', secu: 'Sécurité', lib: 'Libertés', integ: 'Intégrité',
+  intl: 'Crédibilité int.', inst: 'Institutions', treso: 'Trésorerie', opp: 'Opposition',
+  campaign: 'Caisse de campagne',
+};
+const ICONS = { pop:'👥', eco:'📈', secu:'🛡️', lib:'🗽', integ:'⚖️', intl:'🌍', inst:'🏛️', treso:'💰', opp:'📣', campaign:'💼' };
+/** Pour l'opposition, une hausse est mauvaise pour le joueur. */
+const BAD_WHEN_UP = { opp: true, derive: true };
+/** Clés visibles par le joueur dans les récapitulatifs (derive et bonus restent secrets). */
+const GAUGE_KEYS = ['pop','eco','secu','lib','integ','intl','inst'];
+const VISIBLE_KEYS = ['pop','eco','secu','lib','integ','intl','inst','treso','opp','campaign'];
+
+const START_STATE = { pop: 56, eco: 50, secu: 55, lib: 65, integ: 60, intl: 55, inst: 56, treso: 10, opp: 38, derive: 0, campaign: 0, bonus: 0 };
+
+/* ---------------------------------------------------------------------
+   4. ÉVÉNEMENTS
+   Structure d'un événement :
+   {
+     id, cat, title, text,          // texte : chaîne ou fonction(G)
+     minTurn, maxTurn,              // fenêtre d'apparition
+     weight(s, G)                   // poids de tirage selon l'état (≥ 0)
+     when(s, G)                     // condition d'éligibilité (optionnelle)
+     hard                           // événement "dur" : plus fréquent en fin de mandat
+     once, cooldown                 // unicité / délai avant réapparition
+     scheduled                      // tiré uniquement par le calendrier
+     build(G)                       // génération dynamique {text, choices}
+     choices: [{
+       label, out,                  // libellé du bouton, texte de résultat
+       fx: {pop:+3, treso:-5, …},   // effets immédiats
+       later: [{t, fx, msg, cond}], // effets différés (dans t mois)
+       risk: {p, fx, msg, later},   // aléa (p : nombre ou fonction(G))
+       auth: true,                  // mesure antidémocratique (statistiques)
+       flag / unflag: 'nom',        // drapeaux d'état persistants
+       cond(s, G),                  // choix disponible seulement si…
+       run(G, res)                  // effet spécial scripté
+     }]
+   }
+   Variables d'état (s) : pop, eco, secu, lib, integ, intl, inst, treso,
+   opp (opposition), derive (cachée), campaign (caisse), bonus (caché).
+   --------------------------------------------------------------------- */
+
+/** Probabilité qu'une affaire soit découverte : dépend de la liberté de la presse
+    et des drapeaux de contrôle (médias, juges). */
+function disc(G, base) {
+  let p = base + G.s.lib / 250;
+  if (G.flags.mediaControl) p *= 0.45;
+  if (G.flags.judgesControlled) p *= 0.8;
+  return clamp(p, 0.05, 0.9);
+}
+/** Bilan moyen du gouvernement (sert aux élections). */
+function bilan(s) {
+  return (s.eco + s.secu + s.lib + s.integ + s.intl + s.inst) / 6 + clamp(s.treso / 6, -5, 5);
+}
+
+const EVENTS = [
+
+  /* ======================= CALENDRIER (événements programmés) ======================= */
+  {
+    id: 'investiture', scheduled: true, cat: 'Investiture', title: 'Le discours d’investiture',
+    text: G => `Sur les marches du palais, devant la foule et les caméras, ${G.leader} s’apprête à prononcer son premier discours. Les rédacteurs ont préparé trois versions. Chacune engage le mandat… et les promesses, c’est bien connu, ont la vie longue.`,
+    choices: [
+      { label: 'Promettre la transparence et la fin des passe-droits', fx: { integ: 5, inst: 3, lib: 2, pop: 1 },
+        out: 'Les éditorialistes saluent « un ton nouveau ». Vos anciens donateurs, eux, toussent nerveusement.' },
+      { label: 'Promettre la prospérité pour tous', fx: { pop: 5, eco: 1 },
+        later: [{ t: 12, cond: s => s.eco < 55, fx: { pop: -5, integ: -2 }, msg: 'Un an plus tard, la « prospérité pour tous » se fait attendre. La presse ressort le discours.' }],
+        out: 'La foule exulte. Votre ministre des Finances, lui, a soudain besoin de s’asseoir.' },
+      { label: 'Promettre l’ordre et l’autorité de l’État', fx: { secu: 5, pop: 2, lib: -2 },
+        out: 'Les forces de l’ordre applaudissent au premier rang. Les associations de défense des libertés prennent des notes.' },
+    ],
+  },
+  {
+    id: 'budget', scheduled: true, cat: 'Finances', title: 'Le vote du budget annuel',
+    text: G => `L’heure du budget a sonné. La trésorerie affiche ${round(G.s.treso)} milliards. Le Parlement attend votre copie, les lobbies attendent leur part, et les agences de notation attendent votre faux pas.`,
+    choices: [
+      { label: 'Budget d’austérité : on coupe partout', fx: { treso: 16, pop: -6, eco: -3, intl: 2 },
+        later: [{ t: 3, fx: { secu: -2, opp: 3 }, msg: 'Les coupes budgétaires se font sentir : services publics en grève et manifestations.' }],
+        out: 'Les agences de notation sourient. C’est bien les seules.' },
+      { label: 'Budget de relance : on investit massivement', fx: { treso: -14, eco: 6, pop: 4 },
+        later: [{ t: 4, fx: { eco: 3 }, msg: 'Les chantiers de la relance tournent à plein régime.' }],
+        out: 'Les grues reviennent dans le paysage. Le déficit aussi.' },
+      { label: 'Budget équilibré, sans éclat', fx: { treso: 4, eco: 1, pop: -1 },
+        out: 'Un budget si raisonnable que personne ne l’a lu en entier. C’est peut-être mieux ainsi.' },
+      { label: 'Faire passer un budget ambitieux par décret, sans vote', fx: { treso: 8, eco: 3, inst: -7, pop: -3, derive: 6 }, auth: true,
+        out: 'Le budget est adopté sans débat. Les députés découvrent qu’ils étaient décoratifs.' },
+    ],
+  },
+  {
+    id: 'locales', scheduled: true, cat: 'Élections', title: 'Élections locales de mi-mandat',
+    build(G) {
+      const v = Engine.voteEstimate(G) + (G.rng() * 8 - 4);
+      const won = v >= 50;
+      G.tmp.localScore = round(v);
+      if (won) return {
+        text: `Soirée électorale : votre camp obtient environ ${round(v)} % des suffrages aux élections locales et conserve la majorité des grandes villes. L’opposition parle de « résultat en demi-teinte », ce qui veut dire qu’elle a perdu.`,
+        choices: [
+          { label: 'Rester humble et tendre la main aux maires d’opposition', fx: { inst: 3, pop: 2, opp: -2 },
+            out: 'Votre modestie est jugée « présidentielle ». Vos militants, eux, auraient aimé un peu plus de champagne.' },
+          { label: 'Savourer la victoire et accélérer les réformes', fx: { pop: 1, opp: -4, eco: 2, inst: -1 },
+            out: 'Fort de ce succès, vous lancez une salve de réformes. L’opposition, sonnée, compte ses troupes.' },
+        ],
+      };
+      return {
+        text: `Douche froide : votre camp ne recueille qu’environ ${round(v)} % des voix aux élections locales. L’opposition rafle plusieurs grandes villes et réclame déjà « un changement de cap, voire de capitaine ».`,
+        choices: [
+          { label: 'Reconnaître la défaite et remanier le gouvernement', fx: { inst: 4, lib: 2, opp: 5, pop: 2, treso: -2 },
+            out: 'Vous prenez acte du message des urnes. Le remaniement offre un nouveau souffle… et quelques ministres amers.' },
+          { label: 'Dénoncer des irrégularités et contester les résultats', fx: { inst: -6, pop: -3, opp: -2, derive: 8 }, auth: true,
+            out: 'Les recours s’accumulent. Le doute s’installe, mais surtout sur vous.' },
+          { label: 'Faire invalider les scrutins par une Cour « compréhensive »', fx: { inst: -11, lib: -6, intl: -8, opp: -9, derive: 15 }, auth: true,
+            out: 'La Cour annule les élections dans les villes perdues pour « vices de forme ». La forme, effectivement, laisse à désirer.' },
+        ],
+      };
+    },
+  },
+  {
+    id: 'campagne', scheduled: true, cat: 'Campagne', title: 'La campagne présidentielle commence',
+    text: G => `Plus que deux mois avant l’élection. Votre directeur de campagne entre dans votre bureau avec un dossier épais et un sourire inquiétant : « J’ai quelques idées pour sécuriser la victoire. Certaines sont même légales. »`,
+    choices: [
+      { label: 'Une campagne propre, sur le bilan', fx: { integ: 3, inst: 2 },
+        out: 'Votre campagne parle de chiffres et de projets. Les journalistes s’ennuient, ce qui est plutôt bon signe.' },
+      { label: 'Arroser les circonscriptions de subventions', fx: { treso: -12, pop: 5, integ: -2 },
+        out: 'Ronds-points, gymnases, salles des fêtes : le pays se couvre de rubans à couper. Le déficit aussi.' },
+      { label: 'Redécouper les circonscriptions à votre avantage', fx: { bonus: 3, inst: -5, integ: -3, derive: 8 }, auth: true,
+        out: 'Une circonscription en forme de spaghetti traverse désormais trois vallées. La géographie électorale est un art.' },
+      { label: 'Organiser une fraude électorale « discrète »', fx: { bonus: 8, inst: -4, integ: -6, derive: 18 }, auth: true, flag: 'fraud',
+        out: 'Des urnes « pré-remplies » sont commandées. Votre directeur de campagne vous assure que personne ne regardera dedans.' },
+    ],
+  },
+  {
+    id: 'debat', scheduled: true, cat: 'Campagne', title: 'Le grand débat télévisé',
+    text: G => `Le débat d’entre-deux-tours oppose ${G.leader} au chef de l’opposition. Vingt millions de téléspectateurs, trois heures d’antenne, et une petite goutte de sueur qui pourrait tout changer.`,
+    choices: [
+      { label: 'Défendre calmement votre bilan, chiffres à l’appui', fx: { pop: 1 },
+        run(G, res) { const b = clamp((bilan(G.s) - 50) / 4, -4, 5); G.s.bonus += b;
+          res.extra = b >= 0 ? 'Votre maîtrise des dossiers impressionne. Le bilan parle pour vous.' : 'Votre bilan, détaillé point par point, ne joue pas en votre faveur. Les chiffres sont têtus.'; },
+        out: 'Vous déroulez votre bilan avec méthode.' },
+      { label: 'Attaquer frontalement votre adversaire', fx: {},
+        risk: { p: 0.5, fx: { bonus: -4, pop: -2 }, msg: 'Votre attaque tombe à plat. La petite phrase de votre adversaire tourne en boucle sur les réseaux.' },
+        run(G, res) { if (!res.riskHit) { G.s.bonus += 4; res.extra = 'Votre attaque fait mouche : votre adversaire bafouille pendant de longues secondes.'; } },
+        out: 'Vous choisissez l’offensive.' },
+      { label: 'Refuser le débat : « je préfère travailler »', fx: { bonus: -2, inst: -1 },
+        out: 'Une chaise vide vous représente. Elle est jugée plus convaincante que prévu, mais moins que votre adversaire.' },
+      { label: 'Faire déprogrammer le débat par la chaîne publique', cond: (s, G) => G.flags.mediaControl, fx: { bonus: 2, lib: -5, derive: 6 }, auth: true,
+        out: 'Un documentaire animalier remplace le débat. Les pingouins obtiennent une audience record.' },
+    ],
+  },
+  {
+    id: 'meeting', scheduled: true, cat: 'Campagne', title: 'Le dernier meeting',
+    text: 'Dernière ligne droite. Il reste un mois avant le scrutin, un stade à remplir et une poignée de promesses à distribuer. Vos conseillers vous regardent comme on regarde un joueur de poker.',
+    choices: [
+      { label: 'Un grand meeting populaire, coûteux mais spectaculaire', fx: { treso: -5, pop: 3 },
+        out: 'Drapeaux, confettis et hymne : la ferveur est au rendez-vous, la facture aussi.' },
+      { label: 'Promettre une baisse d’impôts massive', fx: { pop: 5, integ: -3, intl: -2 },
+        out: 'La promesse fait un tabac. Les économistes font, eux, une crise d’urticaire.' },
+      { label: 'Une tournée discrète sur le terrain, au contact', fx: { pop: 1, integ: 1, bonus: 1 },
+        out: 'Marchés, usines, cafés : vous serrez dix mille mains. Certaines votent.' },
+    ],
+  },
+
+  /* ============================== DIVERS ============================== */
+  {
+    id: 'calme', cat: 'Agenda', title: 'Un mois (presque) tranquille', cooldown: 8,
+    weight: () => 0.35,
+    text: 'Pour une fois, aucune crise majeure ne frappe à la porte. Votre secrétaire général vous regarde avec méfiance : dans ce métier, le calme précède rarement autre chose que la tempête.',
+    choices: [
+      { label: 'Faire une tournée en province', fx: { treso: -1, pop: 2 },
+        out: 'Comices agricoles, inaugurations, bains de foule : vous goûtez quarante fromages locaux et gagnez quelques points.' },
+      { label: 'Travailler les dossiers de fond avec les ministres', fx: { eco: 1, inst: 1 },
+        out: 'Des réunions interminables, des notes de synthèse, et quelques vraies avancées. Personne n’en parlera.' },
+      { label: 'Prendre une semaine de vacances', fx: { pop: -1, integ: 1 },
+        out: 'Une photo de vous en maillot de bain fait la une. On vous reproche de vous reposer ; on vous l’aurait reproché aussi de ne pas le faire.' },
+    ],
+  },
+
+  /* ============================== ÉCONOMIE ============================== */
+  {
+    id: 'banque', cat: 'Économie', title: 'Panique à la Banque Nationale', minTurn: 5, hard: true, cooldown: 20,
+    weight: s => 0.4 + Math.max(0, 55 - s.eco) / 12,
+    text: 'La Banque Nationale du Commerce annonce des « difficultés passagères de liquidité ». Traduction : les guichets sont fermés et les épargnants campent devant. Son PDG assure que tout va bien, depuis son yacht.',
+    choices: [
+      { label: 'Renflouer la banque avec l’argent public', fx: { treso: -14, eco: 5, pop: -3, integ: -2 },
+        out: 'La banque est sauvée. Les contribuables découvrent qu’ils en étaient actionnaires sans le savoir.' },
+      { label: 'La laisser faire faillite', fx: { eco: -9, pop: -4, intl: 2, integ: 2 },
+        later: [{ t: 4, fx: { eco: 4 }, msg: 'Assaini par la faillite, le secteur bancaire repart sur des bases plus saines.' }],
+        out: 'La banque s’effondre. Les économistes libéraux applaudissent ; les épargnants beaucoup moins.' },
+      { label: 'Nationaliser la banque', fx: { treso: -7, eco: 2, intl: -4, pop: 2 },
+        later: [{ t: 4, fx: { treso: 4 }, msg: 'La banque nationalisée commence à verser des dividendes à l’État.' }],
+        out: 'L’État devient banquier. Les marchés internationaux haussent un sourcil réprobateur.' },
+    ],
+  },
+  {
+    id: 'fiscal', cat: 'Réforme', title: 'La grande réforme fiscale', minTurn: 2, cooldown: 18,
+    weight: s => 0.8 + (s.treso < 0 ? 1 : 0),
+    text: 'Votre ministre des Finances présente trois scénarios de réforme fiscale. Il précise, pour être honnête, que tous les trois feront des mécontents. Il ajoute que c’est à ça qu’on reconnaît une vraie réforme.',
+    choices: [
+      { label: 'Taxer les grandes fortunes', fx: { treso: 9, pop: 3, eco: -3 },
+        later: [{ t: 3, fx: { eco: -3, intl: -1 }, msg: 'Des capitaux s’envolent vers des cieux fiscalement plus cléments.' }],
+        out: 'Les grandes fortunes découvrent soudain un attachement profond pour les paradis fiscaux.' },
+      { label: 'Baisser l’impôt sur les sociétés', fx: { treso: -8, eco: 3, pop: -2 },
+        later: [{ t: 4, fx: { eco: 4, treso: 2 }, msg: 'La baisse d’impôt sur les sociétés commence à attirer des investissements.' }],
+        out: 'Le patronat se dit « encouragé ». Les syndicats, « consternés ». Tout le monde est dans son rôle.' },
+      { label: 'Augmenter la TVA', fx: { treso: 13, pop: -7, eco: -2 },
+        out: 'Le prix de la baguette augmente de quelques centimes ; la colère, de plusieurs degrés.' },
+      { label: 'Reporter la réforme à plus tard', fx: { pop: -1, inst: -1 },
+        later: [{ t: 3, fx: { treso: -3 }, msg: 'Le report de la réforme fiscale laisse filer le déficit.' }],
+        out: 'La réforme est confiée à un comité, qui la confie à un sous-comité.' },
+    ],
+  },
+  {
+    id: 'usine', cat: 'Économie', title: 'Une usine géante… sous conditions', minTurn: 3, cooldown: 20,
+    text: 'Un consortium étranger propose d’implanter une usine géante : 5 000 emplois promis. En échange, il demande des exemptions fiscales et « un certain flou » sur les normes environnementales. Son représentant glisse aussi qu’une « commission » faciliterait les choses.',
+    choices: [
+      { label: 'Accepter telles quelles les conditions', fx: { eco: 6, treso: -3, integ: -2 },
+        later: [{ t: 3, fx: { eco: 3 }, msg: 'L’usine tourne : les embauches dopent l’économie locale.' },
+                { t: 5, fx: { pop: -3, intl: -1 }, msg: 'La rivière près de l’usine a pris une couleur inédite. Les riverains sont furieux.' }],
+        out: 'La première pierre est posée en grande pompe. Personne ne pose de question sur les effluents.' },
+      { label: 'Négocier des garanties sociales et écologiques', fx: { eco: 2, inst: 2, integ: 1 },
+        risk: { p: 0.35, fx: { eco: -3 }, msg: 'Vexé, le consortium s’installe finalement chez le voisin.' },
+        out: 'Vos négociateurs arrachent des engagements fermes.' },
+      { label: 'Accepter… et la « commission » au passage', fx: { eco: 6, campaign: 12, integ: -9 },
+        risk: { p: G => disc(G, 0.15), fx: { pop: -8, integ: -5, inst: -4 }, msg: 'Un journaliste publie la preuve du versement. Le scandale fait la une pendant trois semaines.' },
+        out: 'L’usine arrive, et une enveloppe aussi. Votre caisse de campagne s’en porte très bien.' },
+      { label: 'Refuser : notre pays n’est pas à vendre', fx: { eco: -1, integ: 2, pop: 1, intl: -1 },
+        out: 'Votre fierté nationale est saluée. Les 5 000 emplois aussi, mais de loin.' },
+    ],
+  },
+  {
+    id: 'carburant', cat: 'Économie', title: 'Flambée des prix du carburant', minTurn: 2, cooldown: 14,
+    weight: s => 0.8 + Math.max(0, 50 - s.eco) / 20,
+    text: 'Le prix du baril s’envole à cause d’une crise lointaine dont personne ne sait prononcer le nom. À la pompe, les automobilistes inventent de nouveaux jurons.',
+    choices: [
+      { label: 'Subventionner le carburant', fx: { treso: -9, pop: 3 },
+        out: 'Le prix à la pompe se stabilise. Le budget, lui, prend l’eau.' },
+      { label: 'Laisser les prix suivre le marché', fx: { pop: -5, eco: -2 },
+        risk: { p: G => G.s.eco < 45 ? 0.5 : 0.2, fx: { secu: -6, pop: -2 }, msg: 'Des automobilistes en gilets de toutes les couleurs bloquent les ronds-points.' },
+        out: 'Le marché s’ajuste. Les automobilistes aussi : ils marchent.' },
+      { label: 'Taxer les superprofits des pétroliers', fx: { treso: 4, pop: 3, intl: -2, eco: -2 },
+        out: 'Les compagnies pétrolières crient au scandale entre deux annonces de bénéfices records.' },
+    ],
+  },
+  {
+    id: 'inflation', cat: 'Économie', title: 'L’inflation galope', minTurn: 6, hard: true, cooldown: 16,
+    weight: s => 0.3 + (s.treso < 0 ? 1.2 : 0) + Math.max(0, 45 - s.eco) / 15,
+    text: 'Les prix augmentent de mois en mois. Le panier de la ménagère devient un objet de luxe et la ménagère, une experte en arbitrages budgétaires.',
+    choices: [
+      { label: 'Geler les prix des produits de base', fx: { pop: 4, eco: -5 },
+        later: [{ t: 3, fx: { eco: -2 }, msg: 'Le gel des prix provoque des pénuries dans les rayons.' }],
+        out: 'Les prix se figent. Les rayons commencent à se vider, mais à prix constant.' },
+      { label: 'Soutenir une hausse des taux de la banque centrale', fx: { eco: -3, pop: -2, intl: 2 },
+        later: [{ t: 4, fx: { eco: 4 }, msg: 'L’inflation est maîtrisée : la confiance revient.' }],
+        out: 'Le crédit devient cher, mais la monnaie retrouve des couleurs.' },
+      { label: 'Faire tourner la planche à billets', fx: { treso: 12, intl: -4 },
+        later: [{ t: 3, fx: { eco: -6, pop: -4 }, msg: 'La planche à billets nourrit une inflation encore plus forte. Les billets servent de papier peint.' }],
+        out: 'Les caisses se remplissent comme par magie. La magie a un prix.' },
+    ],
+  },
+  {
+    id: 'chomage', cat: 'Social', title: 'Chômage des jeunes record', minTurn: 3, cooldown: 14,
+    weight: s => 0.5 + Math.max(0, 55 - s.eco) / 12,
+    text: 'Un jeune sur quatre est sans emploi. Les diplômés en philosophie livrent des pizzas, ce qui donne lieu à des conversations passionnantes lors des livraisons.',
+    choices: [
+      { label: 'Lancer un programme d’emplois aidés', fx: { treso: -8, pop: 4, eco: 2 },
+        out: 'Des milliers de contrats sont signés. Les statistiques respirent.' },
+      { label: 'Réformer le code du travail', fx: { eco: 4, pop: -5, opp: 3 },
+        later: [{ t: 4, fx: { eco: 3 }, msg: 'La réforme du travail commence à porter ses fruits : les embauches repartent.' }],
+        out: 'Le patronat applaudit, les syndicats défilent. Le code du travail perd 300 pages.' },
+      { label: 'Instaurer un service civique obligatoire', fx: { secu: 2, lib: -3, treso: -4, pop: 1 },
+        out: 'La jeunesse est mobilisée pour repeindre des écoles. Elle le fait avec un enthousiasme modéré.' },
+    ],
+  },
+  {
+    id: 'petrole', cat: 'Économie', title: 'Du pétrole sous la réserve naturelle', minTurn: 12, once: true,
+    weight: () => 0.6,
+    text: 'Bonne nouvelle : des géologues ont trouvé du pétrole ! Moins bonne nouvelle : il se trouve sous la plus belle réserve naturelle du pays, habitée par une espèce de tortue que l’on croyait disparue.',
+    choices: [
+      { label: 'Exploiter via une compagnie publique transparente', fx: { treso: -5, integ: 2, intl: -1 },
+        later: [{ t: 5, fx: { treso: 16, eco: 4 }, msg: 'Les premiers barils de la compagnie publique remplissent les caisses de l’État.' }],
+        out: 'La compagnie nationale est créée. Les tortues sont priées de déménager.' },
+      { label: 'Concéder l’exploitation à une multinationale', fx: { treso: 12, eco: 3, integ: -3, pop: -2 },
+        out: 'Le chèque est conséquent. Les conditions du contrat le sont un peu moins pour le pays.' },
+      { label: 'Confier la manne à un fonds « géré par des proches »', fx: { treso: 6, campaign: 15, integ: -10 },
+        risk: { p: G => disc(G, 0.15), fx: { pop: -8, inst: -5, intl: -3 }, msg: 'Une ONG révèle les comptes offshore du fonds pétrolier. Le scandale est retentissant.' },
+        out: 'Le fonds souverain est confié à votre beau-frère, « un homme de confiance ».' },
+      { label: 'Protéger la réserve et les tortues', fx: { intl: 5, pop: -2, eco: -1, integ: 1 },
+        out: 'Les tortues sont sauvées. Elles ne votent pas, hélas.' },
+    ],
+  },
+  {
+    id: 'crypto', cat: 'Économie', title: 'La révolution crypto', minTurn: 8, once: true,
+    weight: () => 0.5,
+    text: 'Un jeune conseiller en sweat à capuche propose de faire d’une cryptomonnaie la monnaie officielle du pays. « Ça a marché ailleurs », assure-t-il. Il ne précise pas où, ni combien de temps.',
+    choices: [
+      { label: 'Adopter la cryptomonnaie', fx: { intl: -3 },
+        risk: { p: 0.6, fx: { eco: -7, treso: -10, pop: -4 }, msg: 'Le cours s’effondre de 70 % en une semaine. Les réserves nationales aussi.' },
+        run(G, res) { if (!res.riskHit) { Engine.applyFx(G, { treso: 12, eco: 2 }, res); res.extra = 'Miracle : le cours s’envole et les réserves du pays avec lui. Pour l’instant.'; } },
+        out: 'Le pays devient un « crypto-paradis ».' },
+      { label: 'Refuser poliment', fx: { intl: 1 },
+        out: 'Le conseiller part fonder une start-up. Elle fera faillite en quatre mois.' },
+      { label: 'Créer une commission sur la « blockchain citoyenne »', fx: { treso: -1, pop: 1 },
+        out: 'La commission produit un rapport de 400 pages que personne ne comprend. Succès total.' },
+    ],
+  },
+
+  /* ============================== SOCIAL ============================== */
+  {
+    id: 'greve', cat: 'Social', title: 'Grève générale des transports', cooldown: 10,
+    weight: s => 0.5 + Math.max(0, 55 - s.eco) / 10 + Math.max(0, 50 - s.pop) / 20,
+    text: 'Les syndicats des transports paralysent le pays. Les trains sont à quai, les bus au dépôt, et les ventes de vélos n’ont jamais été aussi bonnes.',
+    choices: [
+      { label: 'Négocier et augmenter les salaires', fx: { treso: -7, pop: 3, eco: -1 },
+        later: [{ t: 2, fx: { eco: 2 }, msg: 'La reprise du travail relance l’activité.' }],
+        out: 'Un accord est trouvé à 4 heures du matin, autour d’un café froid.' },
+      { label: 'Tenir bon et attendre l’essoufflement', fx: { eco: -5, pop: -3 },
+        later: [{ t: 2, fx: { opp: 4 }, msg: 'Les grévistes rejoignent les rangs de l’opposition.' }],
+        out: 'La grève dure, s’essouffle, puis s’arrête. Personne n’a gagné, mais vous avez tenu.' },
+      { label: 'Réquisitionner les grévistes par décret', fx: { secu: 3, lib: -6, inst: -3, pop: -1, derive: 6 }, auth: true,
+        later: [{ t: 2, fx: { pop: -3 }, msg: 'Les images des réquisitions circulent. On parle de « méthodes d’un autre âge ».' }],
+        out: 'Les trains repartent, conduits par des agents sous escorte. L’ambiance à bord est électrique.' },
+    ],
+  },
+  {
+    id: 'etudiants', cat: 'Social', title: 'Les étudiants dans la rue', cooldown: 12,
+    weight: s => 0.4 + Math.max(0, 55 - s.lib) / 15 + Math.max(0, 50 - s.eco) / 20,
+    text: 'La hausse des frais d’inscription met les étudiants dans la rue. Les slogans sont inventifs, les pancartes bien orthographiées : c’est dire si l’éducation fonctionne encore.',
+    choices: [
+      { label: 'Dialoguer et geler les frais', fx: { treso: -4, pop: 3, lib: 2 },
+        out: 'Le gel des frais apaise les esprits. Les amphithéâtres retrouvent leur somnolence habituelle.' },
+      { label: 'Ignorer : ils finiront par partir en vacances', fx: { pop: -2 },
+        later: [{ t: 2, fx: { secu: -4, opp: 3 }, msg: 'Ignorée, la contestation étudiante s’est durcie et radicalisée.' }],
+        out: 'Vous comptez sur le calendrier universitaire. Pari risqué.' },
+      { label: 'Disperser les manifestations par la force', fx: { secu: 4, lib: -7, pop: -4, intl: -3, derive: 6 }, auth: true,
+        risk: { p: 0.3, fx: { pop: -6, opp: 5 }, msg: 'Un étudiant est grièvement blessé. Son portrait est brandi dans tout le pays.' },
+        out: 'Les gaz lacrymogènes dispersent les cortèges. Les questions, elles, restent.' },
+    ],
+  },
+  {
+    id: 'agriculteurs', cat: 'Social', title: 'La colère des agriculteurs', cooldown: 12,
+    weight: s => 0.7 + Math.max(0, 50 - s.eco) / 20,
+    text: 'Les agriculteurs déversent du fumier devant la préfecture. L’odeur est forte, le message aussi : ils ne vivent plus de leur travail.',
+    choices: [
+      { label: 'Débloquer des subventions d’urgence', fx: { treso: -7, pop: 3, eco: 1 },
+        out: 'Les tracteurs repartent. Le fumier, lui, reste.' },
+      { label: 'Libéraliser les prix agricoles', fx: { eco: 2, pop: -4, opp: 2 },
+        out: 'Le marché fixera les prix. Les agriculteurs, eux, fixent leurs fourches.' },
+      { label: 'Promettre une grande commission de concertation', fx: { pop: -1 },
+        later: [{ t: 3, fx: { pop: -3, secu: -2 }, msg: 'La commission agricole n’a rien donné. Les tracteurs reviennent, plus nombreux.' }],
+        out: 'Une commission est créée. Les agriculteurs connaissent la chanson.' },
+    ],
+  },
+  {
+    id: 'hopitaux', cat: 'Social', title: 'Les urgences en grève', cooldown: 14, minTurn: 4,
+    weight: s => 0.6 + (s.treso < 0 ? 0.6 : 0),
+    text: 'Les soignants des urgences cessent le travail pour dénoncer leurs conditions. Les malades, eux, continuent d’arriver : ils n’ont pas reçu le préavis.',
+    choices: [
+      { label: 'Plan massif pour l’hôpital public', fx: { treso: -10, pop: 5, integ: 1 },
+        out: 'Les soignants obtiennent enfin des moyens. Le ministre de la Santé obtient un ulcère.' },
+      { label: 'Primes ciblées et promesses', fx: { treso: -4, pop: 1 },
+        later: [{ t: 4, fx: { pop: -2 }, msg: 'Les promesses faites aux soignants n’ont pas été tenues. Nouvelle grève.' }],
+        out: 'La grève est suspendue. Le mot important est « suspendue ».' },
+      { label: 'Réquisitionner le personnel', fx: { lib: -4, pop: -4, secu: 1, derive: 3 }, auth: true,
+        out: 'Les soignants sont réquisitionnés. Ils travaillent, en silence, ce qui n’est jamais bon signe.' },
+    ],
+  },
+  {
+    id: 'retraites', cat: 'Réforme', title: 'La réforme des retraites', minTurn: 6, once: true, hard: true,
+    weight: s => 0.7 + (s.treso < 0 ? 0.8 : 0),
+    text: 'Le régime des retraites est en déficit. Le rapport des experts tient en une phrase : « Il faudra travailler plus longtemps, cotiser plus, ou toucher moins. » Le choix est vôtre, la colère sera nationale.',
+    choices: [
+      { label: 'Reculer l’âge de départ', fx: { treso: 10, pop: -8, opp: 4 },
+        later: [{ t: 1, fx: { secu: -3, eco: -2 }, msg: 'Le recul de l’âge de départ provoque des grèves massives.' },
+                { t: 5, fx: { treso: 6, intl: 2 }, msg: 'Les économies de la réforme des retraites se confirment.' }],
+        out: 'La réforme est adoptée. Les manifestants promettent de « tenir jusqu’au bout », ce qui, désormais, sera plus tard.' },
+      { label: 'Augmenter les cotisations', fx: { treso: 8, eco: -3, pop: -3 },
+        out: 'Les fiches de paie maigrissent un peu. Les retraites sont sauvées, pour l’instant.' },
+      { label: 'Ne rien faire et laisser filer', fx: { pop: 1 },
+        later: [{ t: 4, fx: { treso: -9, intl: -2 }, msg: 'Le trou des retraites se creuse dangereusement.' }],
+        out: 'Le problème est transmis à votre successeur, comme le veut la tradition.' },
+    ],
+  },
+  {
+    id: 'refugies', cat: 'International', title: 'Afflux de réfugiés', minTurn: 6, cooldown: 24,
+    text: 'Une guerre dans un pays voisin pousse des dizaines de milliers de réfugiés vers vos frontières. Les caméras du monde entier sont braquées sur les camps de fortune.',
+    choices: [
+      { label: 'Accueillir dignement', fx: { intl: 6, treso: -6, pop: -3, integ: 1 },
+        later: [{ t: 6, fx: { eco: 3 }, msg: 'Les réfugiés intégrés comblent des pénuries de main-d’œuvre.' }],
+        out: 'Le monde salue votre humanité. Une partie de votre électorat, un peu moins.' },
+      { label: 'Fermer les frontières', fx: { pop: 3, intl: -6, lib: -2, secu: 2 },
+        out: 'Les barbelés sont posés en une nuit. Les images, elles, feront le tour du monde.' },
+      { label: 'Négocier une aide internationale pour l’accueil', fx: { intl: 3, treso: 2, pop: -1 },
+        out: 'Vous obtenez des fonds en échange d’un accueil encadré. La diplomatie, c’est l’art de partager l’addition.' },
+    ],
+  },
+  {
+    id: 'fete', cat: 'Société', title: 'La fête nationale', cooldown: 12,
+    when: (s, G) => G.turn % 12 === 7, weight: () => 4,
+    text: 'C’est la fête nationale ! Le protocole demande comment vous souhaitez la célébrer. Le ministre des Armées a déjà fait cirer les chars.',
+    choices: [
+      { label: 'Grand défilé militaire', fx: { treso: -4, secu: 2, pop: 2 },
+        out: 'Les chars défilent, les avions dessinent le drapeau dans le ciel. Un seul est un peu de travers.' },
+      { label: 'Fête populaire et concerts gratuits', fx: { treso: -2, pop: 3, lib: 1 },
+        out: 'Le pays danse jusqu’à l’aube. Le lendemain, la productivité est en berne.' },
+      { label: 'Célébration sobre par souci d’économie', fx: { treso: 1, pop: -2, integ: 1 },
+        out: 'Une gerbe, une minute de silence, un buffet de chips. L’austérité a ses symboles.' },
+    ],
+  },
+  {
+    id: 'catastrophe', cat: 'Catastrophe', title: 'Inondations dévastatrices', minTurn: 3, cooldown: 18, hard: true,
+    text: 'Le fleuve sort de son lit et noie trois départements. Votre ministre de l’Environnement sort, lui, de son silence pour rappeler qu’il l’avait « toujours dit ».',
+    choices: [
+      { label: 'Plan d’urgence massif', fx: { treso: -12, pop: 6, secu: 2 },
+        out: 'L’armée, les pompiers et les bénévoles se déploient. Votre présence en bottes sur le terrain fait la une.' },
+      { label: 'Aide minimale, les caisses sont vides', fx: { treso: -3, pop: -5, integ: -1 },
+        out: 'Les sinistrés se sentent abandonnés. Ils s’en souviendront dans l’isoloir.' },
+      { label: 'Demander l’aide internationale', fx: { intl: 3, pop: -1, treso: -3 },
+        later: [{ t: 2, fx: { treso: 7 }, msg: 'Les fonds internationaux pour la reconstruction arrivent.' }],
+        out: 'Les dons affluent. Vos homologues étrangers adorent les photos de solidarité.' },
+    ],
+  },
+  {
+    id: 'pandemie', cat: 'Santé', title: 'Un virus inquiétant', minTurn: 10, once: true, hard: true,
+    weight: () => 0.8,
+    text: 'Un nouveau virus respiratoire se propage. Les épidémiologistes sont inquiets, les complotistes ravis et les fabricants de masques euphoriques.',
+    choices: [
+      { label: 'Confinement strict', fx: { eco: -9, lib: -5, treso: -7, pop: 3, secu: 2 },
+        later: [{ t: 3, fx: { eco: 4, pop: 2 }, msg: 'L’épidémie est maîtrisée : la reprise s’amorce.' }],
+        out: 'Le pays se confine. Les ventes de farine et de puzzles explosent.' },
+      { label: 'Mesures modérées et ciblées', fx: { eco: -4, treso: -4, pop: -1 },
+        risk: { p: 0.4, fx: { pop: -6, secu: -3 }, msg: 'Les hôpitaux saturent. Les mesures modérées sont jugées « trop timides ».' },
+        out: 'Masques, distanciation et télétravail : un compromis à la nationale.' },
+      { label: 'Minimiser : « une grippette »', fx: { pop: -1 },
+        later: [{ t: 2, fx: { pop: -8, eco: -5, intl: -3 }, msg: 'La « grippette » submerge les hôpitaux. Votre déclaration tourne en boucle.' }],
+        out: 'Vous serrez des mains devant les caméras pour rassurer. Pour l’instant, ça rassure.' },
+    ],
+  },
+
+  /* ============================== SCANDALES & PRESSE ============================== */
+  {
+    id: 'pont', cat: 'Scandale', title: 'Le pont du ministre', cooldown: 16,
+    weight: s => 0.4 + Math.max(0, 65 - s.integ) / 15,
+    text: 'Le ministre de l’Équipement aurait fait construire un pont de 40 millions… qui mène directement à sa résidence secondaire. Il plaide « l’intérêt général des habitants », au nombre de trois.',
+    choices: [
+      { label: 'Le limoger publiquement', fx: { integ: 6, pop: 2, inst: 2, opp: 2 },
+        later: [{ t: 3, fx: { opp: 3, pop: -1 }, msg: 'L’ex-ministre de l’Équipement publie des mémoires vengeurs.' }],
+        out: 'Le ministre est remercié. Il retrouve son pont, et beaucoup de temps libre.' },
+      { label: 'Le couvrir : il est loyal', fx: { integ: -5 },
+        risk: { p: G => disc(G, 0.2), fx: { pop: -7, integ: -4, inst: -3 }, msg: 'La presse publie les relevés bancaires du ministre. Votre soutien vous éclabousse.' },
+        out: 'Le ministre reste en poste. Il vous envoie une carte de remerciement… et une photo du pont.' },
+      { label: 'Faire pression sur les rédactions', fx: { lib: -6, integ: -3, intl: -2, derive: 5 }, auth: true,
+        out: 'Les articles sont « reportés ». Les journalistes, eux, n’oublient rien.' },
+    ],
+  },
+  {
+    id: 'enquete', cat: 'Presse', title: 'Une enquête embarrassante', minTurn: 3, cooldown: 14,
+    weight: s => 0.4 + Math.max(0, 70 - s.integ) / 18 + (s.lib > 50 ? 0.4 : 0),
+    text: '« Le Quotidien Libre » prépare une enquête sur le financement de votre campagne. Votre attaché de presse a les mains moites. Vous ne savez pas exactement ce qu’ils ont trouvé, et c’est bien le problème.',
+    choices: [
+      { label: 'Accorder une interview en toute transparence', fx: { integ: 3, lib: 2, pop: -1 },
+        risk: { p: G => G.s.campaign > 10 ? 0.6 : 0.25, fx: { pop: -5, integ: -3 }, msg: 'Vous bafouillez sur l’origine de certains dons. L’extrait devient viral.' },
+        out: 'Vous répondez à toutes les questions. Presque toutes.' },
+      { label: 'Faire racheter le journal par un ami industriel', fx: { lib: -7, integ: -4, intl: -2, derive: 8 }, auth: true,
+        out: 'Le journal change de propriétaire et, curieusement, de ligne éditoriale. L’enquête ne paraîtra jamais.' },
+      { label: 'Porter plainte pour diffamation', fx: { lib: -3, inst: -1 },
+        later: [{ t: 3, fx: { pop: -3, integ: -2 }, msg: 'Effet Streisand : votre plainte a fait dix fois plus de publicité à l’enquête.' }],
+        out: 'Votre avocat est ravi. Les ventes du journal aussi.' },
+    ],
+  },
+  {
+    id: 'douanes', cat: 'Scandale', title: 'Disparitions au port', minTurn: 4, cooldown: 16,
+    weight: s => 0.4 + Math.max(0, 60 - s.integ) / 15,
+    text: 'Des conteneurs entiers disparaissent au port de commerce. Les douaniers jurent n’avoir rien vu, ce qui est cohérent avec leurs nouvelles voitures de sport.',
+    choices: [
+      { label: 'Grande opération anticorruption', fx: { integ: 6, inst: 3, treso: -4, eco: -2 },
+        later: [{ t: 3, fx: { treso: 5 }, msg: 'Les recettes douanières remontent nettement depuis le grand ménage.' }],
+        out: 'Une centaine de douaniers sont suspendus. Le port est paralysé, mais propre.' },
+      { label: 'Prélever discrètement sa part', fx: { campaign: 8, treso: 2, integ: -8 },
+        risk: { p: G => disc(G, 0.15), fx: { pop: -7, integ: -5, inst: -4 }, msg: 'Un douanier repenti balance tout, y compris votre nom.' },
+        out: 'Le système continue de tourner, avec une petite déviation vers votre caisse.' },
+      { label: 'Nommer une commission d’enquête (sans calendrier)', fx: { integ: -1, pop: 1 },
+        out: 'La commission se réunira « dès que possible ». C’est-à-dire jamais.' },
+    ],
+  },
+  {
+    id: 'btp', cat: 'Corruption', title: 'Un généreux donateur', minTurn: 2, cooldown: 14,
+    text: 'Le patron d’un géant du BTP vous propose un « soutien amical » pour votre future campagne. En contrepartie, rien, assure-t-il. Juste une oreille attentive lors des prochains appels d’offres.',
+    choices: [
+      { label: 'Accepter discrètement', fx: { campaign: 12, integ: -7 },
+        risk: { p: G => disc(G, 0.12), fx: { pop: -8, integ: -5, inst: -3 }, msg: 'Le financement occulte de votre campagne est révélé. La justice ouvre une enquête.' },
+        out: 'Une valise change de mains dans un parking souterrain. C’est d’un classicisme…' },
+      { label: 'Refuser poliment', fx: { integ: 2 },
+        out: 'Le patron du BTP vous serre la main avec un sourire crispé. Il financera sans doute votre adversaire.' },
+      { label: 'Le dénoncer publiquement', fx: { integ: 5, pop: 3, eco: -2, opp: 2 },
+        out: 'Votre dénonciation fait sensation. Le BTP, rancunier, ralentit étrangement tous ses chantiers publics.' },
+    ],
+  },
+  {
+    id: 'fakevideo', cat: 'Presse', title: 'La vidéo truquée', minTurn: 5, cooldown: 18,
+    text: 'Une vidéo truquée vous montrant en train de danser la macarena lors d’un sommet sur la famine devient virale. Elle est fausse, mais très bien faite. Et vous dansez plutôt bien.',
+    choices: [
+      { label: 'En rire publiquement', fx: { pop: 3, lib: 1 },
+        risk: { p: 0.3, fx: { pop: -5 }, msg: 'Votre humour ne passe pas : on vous reproche de « prendre la famine à la légère ».' },
+        out: 'Vous postez une vraie vidéo de vous en train de danser. Le pays rit avec vous.' },
+      { label: 'Faire voter une loi contre les « fausses informations »', fx: { lib: -6, secu: 1, pop: 1, derive: 5 }, auth: true,
+        out: 'La loi est votée. Elle permet de supprimer les fausses informations, et quelques vraies au passage.' },
+      { label: 'Couper Internet pendant 48 heures', fx: { lib: -12, eco: -4, intl: -5, secu: 2, derive: 12 }, auth: true,
+        out: 'Le pays se déconnecte. Les gens découvrent qu’ils ont des voisins. Les investisseurs découvrent qu’ils ont d’autres options.' },
+    ],
+  },
+  {
+    id: 'lanceur', cat: 'Presse', title: 'Le lanceur d’alerte', minTurn: 10, cooldown: 20,
+    weight: s => 0.3 + Math.max(0, 55 - s.integ) / 15 + s.derive / 25,
+    text: 'Un fonctionnaire du ministère de l’Intérieur publie des documents prouvant l’existence d’écoutes illégales visant des journalistes. Il affirme avoir « agi en conscience ». Votre ministre de l’Intérieur affirme qu’il a surtout agi sans autorisation.',
+    choices: [
+      { label: 'Le protéger et assumer les erreurs', fx: { lib: 5, integ: 5, pop: -3, inst: 3, derive: -5 },
+        out: 'Vous reconnaissez les dérives et démantelez le programme. Le courage politique est rare : on le remarque.' },
+      { label: 'Le poursuivre pour trahison', fx: { lib: -6, intl: -4, secu: 2, derive: 7 }, auth: true,
+        risk: { p: 0.4, fx: { pop: -5, opp: 4 }, msg: 'Le lanceur d’alerte devient un héros international. Votre image en souffre.' },
+        out: 'Le fonctionnaire est inculpé. Il obtient l’asile dans un pays nordique et un contrat d’édition.' },
+      { label: 'Nier en bloc', fx: { integ: -4 },
+        risk: { p: G => disc(G, 0.25), fx: { pop: -7, inst: -4 }, msg: 'De nouveaux documents prouvent que vous saviez. Le mensonge est pire que la faute.' },
+        out: '« Ces documents sont des faux grossiers. » Reste à espérer qu’il n’y en ait pas d’autres.' },
+    ],
+  },
+
+  /* ============================== SÉCURITÉ ============================== */
+  {
+    id: 'bavure', cat: 'Sécurité', title: 'Une bavure filmée', minTurn: 3, cooldown: 14,
+    weight: s => 0.5 + Math.max(0, 50 - s.secu) / 20 + Math.max(0, 50 - s.lib) / 20,
+    text: 'Une vidéo montre des policiers frappant un livreur lors d’un contrôle. Elle cumule dix millions de vues. Le syndicat de police évoque « un geste technique mal cadré ».',
+    choices: [
+      { label: 'Ouvrir une enquête indépendante', fx: { lib: 4, integ: 3, inst: 2, secu: -3 },
+        out: 'Les policiers sont suspendus. Leurs collègues font la grève du zèle, ce qui ressemble beaucoup à une grève tout court.' },
+      { label: 'Soutenir les forces de l’ordre', fx: { secu: 3, lib: -4, pop: -2, opp: 2 },
+        risk: { p: 0.35, fx: { secu: -6, pop: -2 }, msg: 'Des émeutes éclatent dans plusieurs quartiers après votre soutien à la police.' },
+        out: 'Vous saluez « le travail difficile des policiers ». Le livreur, lui, ne livrera plus avant un moment.' },
+      { label: 'Garder le silence', fx: { pop: -3, lib: -1 },
+        later: [{ t: 2, fx: { secu: -4 }, msg: 'Votre silence a laissé la colère couver : des violences urbaines éclatent.' }],
+        out: 'Vous ne commentez pas. Tout le monde commente votre absence de commentaire.' },
+    ],
+  },
+  {
+    id: 'terrorisme', cat: 'Sécurité', title: 'Menace terroriste', minTurn: 9, cooldown: 18, hard: true,
+    weight: s => 0.4 + Math.max(0, 55 - s.secu) / 15,
+    text: 'Les services de renseignement signalent une menace d’attentat « élevée et imminente ». Ils ne savent ni où, ni quand, ni comment, mais ils sont formels.',
+    choices: [
+      { label: 'Décréter l’état d’urgence', fx: { secu: 8, lib: -7, pop: 3, derive: 7 }, auth: true, flag: 'urgence',
+        out: 'Militaires dans les gares, perquisitions administratives : le pays passe en mode exception.' },
+      { label: 'Renforcer discrètement le renseignement', fx: { treso: -6, secu: 4 },
+        risk: { p: 0.25, fx: { secu: -7, pop: -5 }, msg: 'Un attentat frappe la capitale. L’émotion est immense ; les critiques aussi.' },
+        out: 'Les budgets du renseignement augmentent. Les agents secrets peuvent enfin s’acheter des lunettes noires neuves.' },
+      { label: 'Loi de surveillance de masse', fx: { secu: 6, lib: -11, intl: -3, derive: 11 }, auth: true, flag: 'surveillance',
+        out: 'Désormais, l’État lit vos messages. Il trouve d’ailleurs que vous abusez des émojis.' },
+    ],
+  },
+  {
+    id: 'urgence_fin', cat: 'Institutions', title: 'Prolonger l’état d’urgence ?', minTurn: 12, cooldown: 6,
+    when: (s, G) => G.flags.urgence && G.turn - (G.flagTurn.urgence || 0) >= 5, weight: () => 3,
+    text: 'L’état d’urgence arrive à échéance. La police apprécie ces pouvoirs étendus ; le Conseil constitutionnel, beaucoup moins. Le Parlement attend votre décision.',
+    choices: [
+      { label: 'Lever l’état d’urgence', fx: { lib: 5, secu: -3, inst: 3, derive: -6 }, unflag: 'urgence',
+        out: 'Le droit commun reprend ses droits. Les juges retrouvent le sourire.' },
+      { label: 'Le prolonger « jusqu’à nouvel ordre »', fx: { secu: 2, lib: -3, inst: -3, derive: 6 }, auth: true,
+        out: 'L’exception devient la règle. C’est ainsi que commencent beaucoup de livres d’histoire.' },
+    ],
+  },
+  {
+    id: 'frontiere', cat: 'International', title: 'Tensions à la frontière', minTurn: 8, cooldown: 20, hard: true,
+    text: 'Le pays voisin masse des troupes à la frontière pour un « exercice de routine ». Son président vous a envoyé une carte de vœux un peu trop chaleureuse pour être honnête.',
+    choices: [
+      { label: 'Mobiliser l’armée', fx: { secu: 5, treso: -8, pop: 4, intl: -2 },
+        out: 'Les drapeaux fleurissent aux balcons. L’union sacrée est toujours bonne pour les sondages.' },
+      { label: 'Jouer la carte diplomatique', fx: { intl: 4, pop: -2 },
+        risk: { p: 0.25, fx: { secu: -6, pop: -3 }, msg: 'Un incident frontalier fait plusieurs blessés. On vous reproche votre « naïveté ».' },
+        out: 'Vos diplomates enchaînent les dîners. Les troupes voisines finissent par rentrer, repues.' },
+      { label: 'Saisir les Nations unies', fx: { intl: 3, secu: -1 },
+        out: 'Une résolution ferme est votée. Le voisin la lit, sourit, puis rentre chez lui quand même.' },
+    ],
+  },
+  {
+    id: 'armee', cat: 'Sécurité', title: 'L’armée gronde', minTurn: 10, cooldown: 18,
+    weight: s => 0.2 + Math.max(0, 45 - s.inst) / 15 + s.derive / 30,
+    text: 'Le chef d’état-major se plaint publiquement des salaires, du matériel et, plus inquiétant, « du manque de vision du pouvoir civil ». Il a été vu dînant avec plusieurs colonels.',
+    choices: [
+      { label: 'Augmenter les soldes et moderniser l’équipement', fx: { treso: -8, secu: 3 }, flag: 'armyLoyal',
+        out: 'Les militaires sont satisfaits. Les colonels dînent désormais en famille.' },
+      { label: 'Le limoger pour insubordination', fx: { inst: 3, secu: -3 },
+        risk: { p: G => 0.1 + G.s.derive / 150, fx: { secu: -6, inst: -4 }, msg: 'Des unités refusent d’obéir pendant 48 heures. Le pays retient son souffle.' },
+        out: 'Le général est remplacé par un officier légaliste. L’autorité civile est réaffirmée.' },
+      { label: 'Lui confier un ministère pour l’amadouer', fx: { secu: 4, inst: -5, lib: -3, derive: 8 }, auth: true, flag: 'militaryGov',
+        out: 'Le général entre au gouvernement. Il arrive au Conseil des ministres en treillis.' },
+    ],
+  },
+
+  /* ============================== INSTITUTIONS ============================== */
+  {
+    id: 'medias', cat: 'Institutions', title: 'Une autorité de « l’information responsable »', minTurn: 8, once: true,
+    weight: s => 0.5 + Math.max(0, 50 - s.pop) / 15,
+    text: 'Votre conseiller communication propose de créer une « Haute Autorité de l’Information Responsable ». Elle délivrerait les cartes de presse et pourrait suspendre les médias « irresponsables ». Il insiste sur le mot « responsable ».',
+    choices: [
+      { label: 'Créer l’autorité', fx: { pop: 5, lib: -12, intl: -6, derive: 15 }, auth: true, flag: 'mediaControl',
+        out: 'Les journaux télévisés deviennent soudain très positifs. La météo elle-même est plus clémente.' },
+      { label: 'Refuser catégoriquement', fx: { lib: 2, integ: 2, inst: 2 },
+        out: 'Votre conseiller range son projet. Il le ressortira sans doute dans un an.' },
+      { label: 'Adopter un simple « code de déontologie » non contraignant', fx: { lib: -2, pop: 1, derive: 3 },
+        out: 'Un compromis tiède qui ne satisfait personne mais n’indigne pas grand-monde.' },
+    ],
+  },
+  {
+    id: 'juge', cat: 'Institutions', title: 'Une juge trop curieuse', minTurn: 8, cooldown: 20,
+    weight: s => 0.3 + Math.max(0, 65 - s.integ) / 15,
+    text: 'Une juge d’instruction s’intéresse de près aux marchés publics de votre ministère de l’Intérieur. Elle a la réputation d’être incorruptible, ce qui, dans ce métier, est presque une provocation.',
+    choices: [
+      { label: 'Laisser la justice travailler', fx: { inst: 5, integ: 2 },
+        risk: { p: G => clamp((100 - G.s.integ) / 140, 0.1, 0.7), fx: { pop: -6, integ: -3 }, msg: 'Un de vos proches conseillers est mis en examen. L’affaire remonte jusqu’à votre cabinet.' },
+        out: 'La justice suit son cours. Vous suivez le dossier, de loin, en croisant les doigts.' },
+      { label: 'La muter dans une lointaine province', fx: { inst: -7, lib: -3, integ: -4, derive: 7 }, auth: true,
+        out: 'La juge est promue présidente du tribunal d’une île de 300 habitants. Elle a emporté ses dossiers.' },
+      { label: 'Réformer la justice : le pouvoir nommera les juges', fx: { inst: -12, lib: -5, intl: -5, derive: 14 }, auth: true, flag: 'judgesControlled',
+        out: 'Au nom de « l’efficacité », les juges seront désormais nommés par l’exécutif. L’efficacité est indéniable.' },
+    ],
+  },
+  {
+    id: 'coalition', cat: 'Institutions', title: 'La coalition vacille', minTurn: 5, cooldown: 16,
+    weight: s => 0.4 + Math.max(0, s.opp - 45) / 15,
+    text: 'Votre partenaire de coalition menace de quitter le gouvernement si on ne lui accorde pas deux ministères supplémentaires. Il a déjà choisi la couleur des rideaux.',
+    choices: [
+      { label: 'Céder les ministères', fx: { opp: -4, integ: -2, pop: -2, treso: -2 },
+        out: 'La coalition est sauvée. Le gouvernement compte désormais 42 ministres, dont un « ministre des Synergies ».' },
+      { label: 'Le laisser partir', fx: { opp: 6, inst: -2, integ: 2 },
+        out: 'Votre ex-partenaire rejoint l’opposition avec fracas et quelques députés.' },
+      { label: 'Acheter discrètement quelques députés', fx: { opp: -7, integ: -9, treso: -5, derive: 5 }, auth: true,
+        risk: { p: G => disc(G, 0.15), fx: { pop: -7, inst: -5 }, msg: 'Un député filme la remise de l’enveloppe. La vidéo est diffusée au journal de 20 heures.' },
+        out: 'Votre majorité est renforcée par des députés soudainement convaincus.' },
+    ],
+  },
+  {
+    id: 'opposant', cat: 'Institutions', title: 'Le chef de l’opposition inquiété', minTurn: 12, cooldown: 20,
+    weight: s => Math.max(0, s.opp - 45) / 10,
+    text: 'Le chef de l’opposition est accusé de fraude fiscale. Coïncidence troublante : il vient de passer devant vous dans les sondages. Votre ministre de la Justice attend vos « orientations ».',
+    choices: [
+      { label: 'Laisser la justice suivre son cours, sans intervenir', fx: { inst: 3, integ: 2 },
+        risk: { p: 0.5, fx: { opp: 6, pop: -2 }, msg: 'Le chef de l’opposition est blanchi. Il savoure son triomphe sur tous les plateaux.' },
+        run(G, res) { if (!res.riskHit) { Engine.applyFx(G, { opp: -8 }, res); res.extra = 'L’enquête confirme les faits : le chef de l’opposition est fragilisé.'; } },
+        out: 'Vous rappelez l’indépendance de la justice.' },
+      { label: 'Faire accélérer la procédure et l’arrêter', fx: { opp: -12, lib: -8, intl: -8, inst: -6, derive: 14 }, auth: true,
+        later: [{ t: 2, fx: { pop: -4, secu: -3, opp: 4 }, msg: 'Le chef de l’opposition, en prison, est devenu un martyr. Ses partisans manifestent.' }],
+        out: 'L’opposant est arrêté à l’aube devant les caméras. Le timing est « purement fortuit ».' },
+      { label: 'Défendre publiquement sa présomption d’innocence', fx: { integ: 3, inst: 3, opp: 2, pop: 1 },
+        out: 'Votre geste républicain surprend. Même vos adversaires saluent votre élégance (en privé).' },
+    ],
+  },
+  {
+    id: 'constitution', cat: 'Institutions', title: 'Réformer la Constitution ?', minTurn: 18, once: true,
+    weight: s => 0.4 + s.derive / 25 + Math.max(0, s.pop - 55) / 15,
+    text: 'Vos partisans proposent une réforme constitutionnelle renforçant les pouvoirs présidentiels : pouvoir de dissolution élargi, référendums d’initiative présidentielle, et « assouplissement » des contre-pouvoirs.',
+    choices: [
+      { label: 'Organiser un référendum', fx: {},
+        run(G, res) {
+          const ok = G.rng() < clamp((G.s.pop - 30) / 40, 0.05, 0.9);
+          if (ok) { Engine.applyFx(G, { inst: -6, lib: -3, bonus: 3, derive: 10, pop: 2 }, res); res.extra = 'Le « oui » l’emporte. Vos pouvoirs sont renforcés… et l’équilibre institutionnel fragilisé.'; G.stats.auth++; }
+          else { Engine.applyFx(G, { pop: -6, opp: 6, inst: 2 }, res); res.extra = 'Le « non » l’emporte nettement. Un camouflet personnel retentissant.'; res.alert = true; }
+        },
+        out: 'Le peuple est convoqué aux urnes.' },
+      { label: 'Renoncer : la Constitution est très bien comme elle est', fx: { inst: 4, integ: 2 },
+        out: 'Vos partisans sont déçus. Les constitutionnalistes, rassurés, retournent à leurs colloques.' },
+      { label: 'Faire adopter la réforme par le Parlement, sans référendum', fx: { inst: -12, lib: -4, intl: -6, bonus: 4, derive: 18 }, auth: true,
+        out: 'La réforme passe en séance de nuit, à 3 heures du matin. Les rares députés éveillés votent pour.' },
+    ],
+  },
+  {
+    id: 'report', cat: 'Institutions', title: 'Et si l’on reportait les élections ?', minTurn: 38, maxTurn: 46, once: true,
+    weight: s => 0.4 + Math.max(0, 52 - s.pop) / 8 + s.derive / 15,
+    text: 'Votre ministre de l’Intérieur suggère qu’en raison des « circonstances exceptionnelles », l’élection présidentielle pourrait être reportée de deux ans. Il précise qu’il n’y a pas vraiment de circonstances exceptionnelles, mais qu’on peut en trouver.',
+    choices: [
+      { label: 'Reporter les élections de deux ans', fx: { inst: -15, lib: -10, intl: -15, opp: 10, derive: 30 }, auth: true, flag: 'postponed',
+        out: 'Le décret est signé. Le calendrier électoral est « suspendu ». Les rues, elles, ne le sont pas.' },
+      { label: 'Refuser fermement : la démocratie n’attend pas', fx: { inst: 5, integ: 3, lib: 2 },
+        out: 'Votre ministre de l’Intérieur range sa proposition. Il a l’air déçu ; vous êtes soulagé.' },
+      { label: 'Simplement avancer la date pour prendre l’opposition de court', fx: { bonus: 2, inst: -3, derive: 5 },
+        out: 'L’élection est avancée de trois semaines. L’opposition, prise de court, réimprime ses affiches.' },
+    ],
+  },
+  {
+    id: 'ong', cat: 'International', title: 'Le rapport accablant', minTurn: 8, cooldown: 14,
+    weight: s => Math.max(0, 55 - s.lib) / 12 + s.derive / 20,
+    text: 'Une ONG internationale publie un rapport classant votre pays parmi les « démocraties en déclin ». Vous perdez 22 places au classement de la liberté de la presse, juste derrière un pays dont vous ignoriez l’existence.',
+    choices: [
+      { label: 'Accepter les recommandations', fx: { lib: 5, intl: 5, secu: -2, derive: -5 },
+        out: 'Vous annoncez des réformes. Les chancelleries étrangères apprécient le geste.' },
+      { label: 'Expulser l’ONG du territoire', fx: { lib: -5, intl: -7, pop: 2, derive: 6 }, auth: true,
+        out: 'L’ONG est priée de quitter le pays. Son prochain rapport sera encore plus sévère.' },
+      { label: 'Lancer une contre-campagne de communication', fx: { treso: -3, intl: -1, pop: 1 },
+        out: 'Une agence de relations publiques produit de jolies vidéos sur vos plages. Personne n’est dupe.' },
+    ],
+  },
+  {
+    id: 'pro_demo', cat: 'Social', title: 'La rue réclame la démocratie', minTurn: 10, cooldown: 10, hard: true,
+    when: s => s.derive >= 30,
+    weight: s => s.derive / 15,
+    text: 'Des centaines de milliers de manifestants envahissent la capitale aux cris de « Rendez-nous nos libertés ! ». Les chaînes étrangères diffusent les images en boucle. Vos services de sécurité attendent des ordres.',
+    choices: [
+      { label: 'Faire des concessions démocratiques', fx: { lib: 6, inst: 3, opp: 5, pop: 2, derive: -9 },
+        out: 'Vous annoncez la libération de détenus et l’abrogation de lois contestées. La foule se disperse, méfiante mais apaisée.' },
+      { label: 'Réprimer fermement', fx: { secu: 5, lib: -9, intl: -8, pop: -5, derive: 12 }, auth: true,
+        risk: { p: 0.35, fx: { pop: -8, secu: -8, opp: 6 }, msg: 'La répression fait des victimes. Le pays bascule dans la colère.' },
+        out: 'Les blindés entrent dans la capitale. Le calme revient, du moins en surface.' },
+      { label: 'Ouvrir un dialogue national', fx: { pop: -1, inst: 2, derive: -3 },
+        out: 'Une conférence nationale est convoquée. Elle durera des mois, mais elle a le mérite d’exister.' },
+    ],
+  },
+  {
+    id: 'apaisement', cat: 'Institutions', title: 'Rumeurs dans les casernes', minTurn: 10, cooldown: 12,
+    when: s => s.derive >= 45 || s.inst < 25,
+    weight: () => 1.5,
+    text: 'Vos services vous transmettent une note confidentielle : des officiers supérieurs se réunissent en secret. Le mot « transition » revient souvent dans leurs conversations téléphoniques (que vous écoutez, évidemment).',
+    choices: [
+      { label: 'Geste d’apaisement : rétablir des garde-fous démocratiques', fx: { lib: 5, inst: 5, pop: -2, opp: 4, derive: -10 },
+        out: 'Vous rendez des pouvoirs au Parlement et à la justice. Les conjurés perdent leur prétexte.' },
+      { label: 'Purger l’état-major', fx: { secu: -5, inst: -5, derive: 8 }, auth: true,
+        risk: { p: 0.3, fx: { secu: -8, inst: -6 }, msg: 'La purge déclenche une mutinerie dans une garnison du Nord.' },
+        out: 'Une vingtaine de généraux sont mis à la retraite anticipée. Les autres font profil bas.' },
+      { label: 'Acheter la loyauté de l’armée', fx: { treso: -10, secu: 2 }, flag: 'armyLoyal',
+        out: 'Primes, logements, voitures de fonction : la loyauté a un prix, et vous venez de le payer.' },
+    ],
+  },
+
+  /* ============================== INTERNATIONAL ============================== */
+  {
+    id: 'sommet', cat: 'International', title: 'Le sommet climat', cooldown: 16,
+    text: 'Le grand sommet climatique international s’ouvre à Genève. Tous les dirigeants sont là, chacun arrivé en jet privé pour parler sobriété.',
+    choices: [
+      { label: 'Signer un accord ambitieux', fx: { intl: 6, eco: -2, treso: -3 },
+        out: 'Votre signature est saluée. Vos industriels, eux, calculent le coût des nouvelles normes.' },
+      { label: 'Discours souverainiste : « pas de leçons ! »', fx: { pop: 3, intl: -6 },
+        out: 'Votre discours fait un tabac à la maison et un flop à l’étranger.' },
+      { label: 'Faire de la figuration et profiter du buffet', fx: { intl: 1, treso: -1 },
+        out: 'Vous serrez des mains, prenez des photos et goûtez les petits fours. Diplomatie de proximité.' },
+    ],
+  },
+  {
+    id: 'fmi', cat: 'International', title: 'Le Fonds monétaire frappe à la porte', minTurn: 4, cooldown: 12,
+    when: s => s.treso < 5, weight: s => 0.5 + Math.max(0, -s.treso) / 10,
+    text: G => `Avec une trésorerie à ${round(G.s.treso)} milliards, le Fonds monétaire international propose un prêt généreux. Les conditions tiennent sur 80 pages ; la première commence par « austérité ».`,
+    choices: [
+      { label: 'Accepter avec les réformes structurelles exigées', fx: { treso: 25, pop: -7, eco: -2, intl: 5 },
+        later: [{ t: 4, fx: { eco: 3 }, msg: 'Les réformes exigées par le FMI commencent à rassurer les investisseurs.' },
+                { t: 2, fx: { opp: 3 }, msg: 'Les mesures d’austérité du FMI renforcent l’opposition.' }],
+        out: 'Les fonds arrivent. Les experts du FMI aussi, avec leurs tableurs et leurs costumes gris.' },
+      { label: 'Négocier un prêt plus modeste', fx: { treso: 12, pop: -3, intl: 1 },
+        out: 'Un compromis honorable : moins d’argent, moins de contraintes.' },
+      { label: 'Refuser au nom de la souveraineté', fx: { pop: 2, intl: -3 },
+        out: 'Votre refus est applaudi par la foule. Les banquiers, eux, montent vos taux d’intérêt.' },
+    ],
+  },
+  {
+    id: 'dictateur', cat: 'International', title: 'Un partenaire encombrant', minTurn: 6, cooldown: 20,
+    text: 'Le président à vie d’un émirat gazier propose un partenariat stratégique : gaz à prix d’ami, investissements massifs. Il souhaite juste une photo souriante avec vous, et votre silence sur ses « affaires intérieures ».',
+    choices: [
+      { label: 'Accepter le partenariat', fx: { treso: 11, eco: 3, intl: -6, integ: -2, derive: 3 },
+        out: 'Les contrats sont signés sous les dorures. La photo fait le tour des rédactions, pas pour les bonnes raisons.' },
+      { label: 'Refuser poliment', fx: { intl: 3, eco: -1 },
+        out: 'Vous déclinez l’offre. Le gaz ira chez le voisin, qui vous enverra une carte postale.' },
+      { label: 'Accepter, mais critiquer publiquement les droits humains', fx: { treso: 5, intl: 1 },
+        risk: { p: 0.4, fx: { treso: -5, eco: -2 }, msg: 'Vexé par vos critiques, le président à vie annule tous les contrats.' },
+        out: 'Vous signez d’une main et tapez du poing sur la table de l’autre. Exercice d’équilibriste.' },
+    ],
+  },
+  {
+    id: 'aide_dev', cat: 'International', title: 'Une aide internationale conditionnelle', minTurn: 5, cooldown: 18,
+    text: 'L’Union des démocraties vous propose un programme d’aide au développement : 15 milliards sur trois ans. Condition : des réformes anticorruption contrôlées par des auditeurs indépendants (très, très indépendants).',
+    choices: [
+      { label: 'Accepter les auditeurs', fx: { treso: 8, integ: 4, intl: 4, campaign: -5 },
+        risk: { p: G => G.s.integ < 45 ? 0.5 : 0.15, fx: { pop: -4, integ: -2 }, msg: 'Les auditeurs découvrent des irrégularités embarrassantes dans plusieurs ministères.' },
+        out: 'Les auditeurs s’installent dans les ministères. Plusieurs hauts fonctionnaires prennent des congés soudains.' },
+      { label: 'Refuser : nous ne sommes pas sous tutelle', fx: { pop: 2, intl: -3 },
+        out: 'L’aide est réorientée vers un pays plus coopératif. Votre fierté est intacte, votre budget moins.' },
+      { label: 'Accepter, puis « réorienter » discrètement les fonds', fx: { treso: 12, campaign: 6, integ: -7 },
+        risk: { p: G => disc(G, 0.2), fx: { intl: -10, pop: -5, treso: -8 }, msg: 'Le détournement de l’aide internationale est découvert. Les bailleurs exigent le remboursement.' },
+        out: 'Les fonds arrivent et prennent des chemins de traverse.' },
+    ],
+  },
+];
+
+/** Calendrier : événements programmés par tour. */
+const SCHEDULE = { 1: ['investiture'], 12: ['budget'], 24: ['locales'], 36: ['budget'], 46: ['campagne'], 47: ['debat'], 48: ['meeting'] };
+
+/* ---------------------------------------------------------------------
+   5. MOTEUR DE JEU (aucune dépendance au DOM)
+   --------------------------------------------------------------------- */
+const Engine = {
+  /** Crée une nouvelle partie. */
+  create(opts = {}) {
+    const rng = opts.rng || Math.random;
+    return {
+      leader: opts.leader || 'Camille Duval',
+      country: opts.country || 'République de Valmérie',
+      diffKey: opts.difficulty || 'normal',
+      diff: DIFFICULTIES[opts.difficulty || 'normal'],
+      rng,
+      s: Object.assign({}, START_STATE),
+      turn: 0,
+      flags: {}, flagTurn: {},
+      queue: [],            // effets différés {turn, fx, msg}
+      lastSeen: {},         // dernier tour d'apparition par événement
+      pending: [],          // cartes du mois
+      idx: 0,               // carte courante
+      log: [],              // journal
+      tmp: {},
+      monthStart: null,
+      stats: { decisions: 0, auth: 0, risks: 0, scandals: 0 },
+      ending: null,
+      history: [],          // instantanés mensuels (pour le bilan)
+    };
+  },
+
+  progress(G) { return clamp(G.turn / CONFIG.TURNS, 0, 1); },
+
+  /** Multiplicateur appliqué aux effets défavorables (difficulté + progression). */
+  negMult(G) { return G.diff.neg * (1 + 0.4 * this.progress(G)); },
+
+  /**
+   * Applique un ensemble d'effets à l'état.
+   * res (optionnel) accumule les variations visibles pour l'affichage.
+   */
+  applyFx(G, fx, res, scale = true) {
+    const s = G.s;
+    for (const k in fx) {
+      let v = fx[k];
+      if (!v) continue;
+      const bad = BAD_WHEN_UP[k] ? v > 0 : v < 0;
+      if (scale && bad && k !== 'derive' && k !== 'bonus' && k !== 'campaign') v *= this.negMult(G);
+      // Rendements décroissants : plus une jauge est haute, plus elle est difficile à faire monter
+      if (scale && v > 0 && GAUGE_KEYS.includes(k) && s[k] > 60) v *= clamp((100 - s[k]) / 40, 0.2, 1);
+      const before = s[k];
+      if (k === 'treso' || k === 'bonus') s[k] = s[k] + v;
+      else if (k === 'campaign') s[k] = Math.max(0, s[k] + v);
+      else s[k] = clamp(s[k] + v, 0, 100);
+      const d = s[k] - before;
+      if (res && VISIBLE_KEYS.includes(k) && Math.abs(d) >= 0.5) {
+        res.deltas = res.deltas || {};
+        res.deltas[k] = (res.deltas[k] || 0) + d;
+      }
+    }
+  },
+
+  /** Nombre de dossiers ce mois-ci (1 à 3), croissant avec le temps. */
+  eventCount(G) {
+    const p = this.progress(G), r = G.rng();
+    if (p < 0.2) return r < 0.45 ? 2 : 1;
+    if (p < 0.6) return r < 0.7 ? 2 : (r < 0.85 ? 1 : 3);
+    return r < 0.35 + 0.3 * p ? 3 : 2;
+  },
+
+  /** Début de mois : tirage pondéré des événements. */
+  beginMonth(G) {
+    G.turn++;
+    G.tmp = {};
+    G.monthStart = Object.assign({}, G.s);
+    const p = this.progress(G);
+    const picked = [];
+    // 1) événements programmés
+    for (const id of (SCHEDULE[G.turn] || [])) {
+      const ev = EVENTS.find(e => e.id === id);
+      if (ev && !(id === 'meeting' && G.flags.postponed) && !(['campagne','debat'].includes(id) && G.flags.postponed)) picked.push(ev);
+    }
+    // 2) tirage aléatoire pondéré par l'état des indicateurs
+    const n = Math.max(this.eventCount(G), picked.length);
+    const pool = EVENTS.filter(e => {
+      if (e.scheduled) return false;
+      if (G.turn < (e.minTurn || 1) || G.turn > (e.maxTurn || 99)) return false;
+      if (e.once && G.lastSeen[e.id] !== undefined) return false;
+      if (G.lastSeen[e.id] !== undefined && G.turn - G.lastSeen[e.id] < (e.cooldown || 10)) return false;
+      if (e.when && !e.when(G.s, G)) return false;
+      return true;
+    });
+    const weightOf = e => {
+      let w = e.weight ? Math.max(0, e.weight(G.s, G)) : 1;
+      if (e.hard) w *= 0.4 + 1.6 * p; // difficulté progressive
+      return w;
+    };
+    while (picked.length < n && pool.length) {
+      const ws = pool.map(weightOf);
+      const total = ws.reduce((a, b) => a + b, 0);
+      if (total <= 0) break;
+      let r = G.rng() * total, i = 0;
+      while (r > ws[i]) { r -= ws[i]; i++; }
+      picked.push(pool[i]);
+      pool.splice(i, 1);
+    }
+    // 2 bis) repli : si tout est en délai de réapparition, on reprend l'événement vu le moins récemment
+    if (!picked.length) {
+      const fallback = EVENTS.filter(e => !e.scheduled && !e.once && G.turn >= (e.minTurn || 1) && G.turn <= (e.maxTurn || 99) && (!e.when || e.when(G.s, G)))
+        .sort((a, b) => (G.lastSeen[a.id] || 0) - (G.lastSeen[b.id] || 0));
+      picked.push(fallback[0] || EVENTS.find(e => e.id === 'calme'));
+    }
+    // 3) résolution des cartes (textes / choix dynamiques)
+    G.pending = picked.map(ev => this.resolveCard(G, ev));
+    picked.forEach(ev => { G.lastSeen[ev.id] = G.turn; });
+    G.idx = 0;
+    return G.pending;
+  },
+
+  /** Transforme un événement en carte jouable (texte et choix concrets). */
+  resolveCard(G, ev) {
+    let text = ev.text, choices = ev.choices;
+    if (ev.build) { const b = ev.build(G); text = b.text; choices = b.choices; }
+    if (typeof text === 'function') text = text(G);
+    choices = choices.filter(c => !c.cond || c.cond(G.s, G));
+    return { ev, id: ev.id, cat: ev.cat, title: ev.title, text, choices };
+  },
+
+  currentCard(G) { return G.pending[G.idx] || null; },
+
+  /** Le joueur choisit l'option i de la carte courante. */
+  choose(G, i) {
+    const card = this.currentCard(G);
+    const c = card.choices[i];
+    const res = { card, choice: c, out: c.out, deltas: {}, riskHit: false, extra: '', later: !!(c.later && c.later.length) };
+    G.stats.decisions++;
+    if (c.auth) G.stats.auth++;
+    this.applyFx(G, c.fx || {}, res);
+    if (c.flag) { G.flags[c.flag] = true; G.flagTurn[c.flag] = G.turn; }
+    if (c.unflag) delete G.flags[c.unflag];
+    // aléa
+    if (c.risk) {
+      const p = typeof c.risk.p === 'function' ? c.risk.p(G) : c.risk.p;
+      if (G.rng() < p) {
+        res.riskHit = true; res.alert = true; res.riskMsg = c.risk.msg;
+        G.stats.risks++;
+        this.applyFx(G, c.risk.fx || {}, res);
+        if (c.risk.later) this.schedule(G, c.risk.later, card.title);
+      }
+    }
+    if (c.run) c.run(G, res);
+    if (c.later) this.schedule(G, c.later, card.title);
+    this.log(G, 'decision', `<b>${card.title}</b> — ${c.label}.` + (res.riskMsg ? ` <i>${res.riskMsg}</i>` : '') + (res.extra ? ` <i>${res.extra}</i>` : ''), res.deltas);
+    G.idx++;
+    if (G.tmp.endNow) { this.setEnding(G, G.tmp.endNow); }
+    return res;
+  },
+
+  schedule(G, list, src) {
+    for (const l of list) G.queue.push({ turn: G.turn + l.t, fx: l.fx, msg: l.msg, cond: l.cond, src });
+  },
+
+  log(G, type, text, deltas) { G.log.push({ turn: G.turn, type, text, deltas: deltas || null }); },
+
+  /** Estimation du score électoral (sans bruit ni bonus caché). */
+  voteEstimate(G) {
+    const s = G.s;
+    return clamp(48.5 + (s.pop - 50) * 0.5 + (bilan(s) - 50) * 0.3 - (s.opp - 50) * 0.3 + Math.min(s.campaign, 30) * 0.15, 2, 98);
+  },
+
+  /** Probabilités mensuelles de chute du régime. */
+  risks(G) {
+    const s = G.s, f = G.flags, k = G.diff.risk;
+    const r = { revolution: 0, coup: 0, destitution: 0, sanctions: 0 };
+    // Révolution : peuple exaspéré. En démocratie, on attend plutôt les urnes ;
+    // sous un régime autoritaire (dérive élevée, libertés écrasées), la rue explose.
+    let rev = 0;
+    if (s.pop < 25) rev += (25 - s.pop) / 100;
+    if (s.opp > 85) rev += 0.02;
+    if (f.postponed) rev += 0.04;
+    if (rev > 0) rev *= 0.2 + s.derive / 40 + (s.lib < 30 ? 0.4 : 0);
+    r.revolution = rev;
+    // Coup d'État : dérive autoritaire, institutions effondrées ou chaos sécuritaire
+    let coup = 0;
+    // (un régime autoritaire mais populaire et qui choie son armée peut tenir… un temps)
+    if (s.derive > 50) coup += (s.derive - 50) / 300 * (s.pop < 40 ? 1.5 : 0.7);
+    if (s.inst < 25) coup += (25 - s.inst) / 200;
+    if (s.secu < 20) coup += (20 - s.secu) / 200;
+    if (f.armyLoyal) coup *= 0.5;
+    if (f.militaryGov) coup *= 1.5;
+    r.coup = coup;
+    // Destitution : corruption avérée face à des institutions encore solides
+    if (s.integ < 20 && s.inst > 40) r.destitution = (20 - s.integ) / 60 * (s.inst / 100) * (f.judgesControlled ? 0.3 : 1);
+    // Sanctions : isolement international d'un régime autoritaire
+    if (s.intl < 15 && s.derive > 50) r.sanctions = (15 - s.intl) / 120;
+    for (const key in r) r[key] = clamp(r[key] * k, 0, 0.6);
+    return r;
+  },
+
+  /** Évolution « naturelle » mensuelle des indicateurs. */
+  drift(G) {
+    const s = G.s, f = G.flags, p = this.progress(G), D = G.diff.drift;
+    // Économie : tend vers 50, s'use avec le temps et souffre de la dette
+    s.eco += (50 - s.eco) * 0.03 - 0.25 * p * D;
+    if (s.treso < -20) { s.eco -= 0.5; s.intl -= 0.4; }
+    // Trésorerie : recettes fonction de l'économie ; intérêts si dette
+    s.treso += (s.eco - 50) / 10 + 1.5;
+    if (s.treso < 0) s.treso += s.treso * 0.015;
+    // Sécurité : tend vers 50, se dégrade si l'économie va mal
+    s.secu += (50 - s.secu) * 0.03 + (s.eco < 35 ? -0.6 : 0) + (f.urgence ? 0.3 : 0) + (f.surveillance ? 0.2 : 0);
+    // Libertés : tendent vers 60, rongées par les mesures d'exception
+    s.lib += (60 - s.lib) * 0.025 - (f.mediaControl ? 0.4 : 0) - (f.urgence ? 0.4 : 0) - (f.surveillance ? 0.3 : 0);
+    // Intégrité : la corruption s'installe naturellement si personne ne veille
+    s.integ += (50 - s.integ) * 0.02 - 0.1 * D + (s.inst - 50) * 0.005 + (s.lib - 50) * 0.003;
+    // Institutions : suivent l'intégrité, minées par la dérive autoritaire
+    s.inst += (s.integ - s.inst) * 0.02 + (s.lib - s.inst) * 0.01 + (50 - s.inst) * 0.01 - s.derive * 0.015;
+    // Crédibilité internationale
+    s.intl += (50 - s.intl) * 0.015 + (s.lib - 55) * 0.01 - s.derive * 0.012;
+    // Popularité : converge vers une « cible » issue du bilan, usure du pouvoir
+    const target = 0.35 * s.eco + 0.2 * s.secu + 0.15 * s.lib + 0.3 * s.integ - 3 - 9 * p * D + (f.mediaControl ? 6 : 0);
+    s.pop += (target - s.pop) * 0.10;
+    if (s.treso < -30) s.pop -= 0.5;
+    // Opposition : se renforce quand la popularité baisse
+    const oppTarget = 100 - s.pop * 0.9 + 6 * p; // l'opposition se mobilise à l'approche du scrutin
+    s.opp += (oppTarget - s.opp) * 0.08 + (s.derive > 30 ? 0.3 : 0) - (f.mediaControl ? 0.3 : 0);
+    // Dérive autoritaire (cachée)
+    s.derive += (f.mediaControl ? 0.5 : 0) + (f.urgence ? 0.4 : 0) + (f.surveillance ? 0.3 : 0) - 0.2 - (s.lib > 55 && s.inst > 55 ? 0.4 : 0);
+    for (const k of ['pop','eco','secu','lib','integ','intl','inst','opp','derive']) s[k] = clamp(s[k], 0, 100);
+  },
+
+  /**
+   * Fin de mois : effets différés, évolution naturelle, tests de chute,
+   * et élection au dernier tour. Retourne un résumé pour l'interface.
+   */
+  endMonth(G) {
+    const sum = { delayed: [], warnings: [], hints: [], election: null };
+    // 1) effets différés
+    const due = G.queue.filter(q => q.turn <= G.turn);
+    G.queue = G.queue.filter(q => q.turn > G.turn);
+    for (const q of due) {
+      if (q.cond && !q.cond(G.s, G)) continue;
+      const res = { deltas: {} };
+      this.applyFx(G, q.fx, res);
+      sum.delayed.push({ msg: q.msg, deltas: res.deltas });
+      this.log(G, 'conseq', q.msg, res.deltas);
+    }
+    // 2) évolution naturelle
+    this.drift(G);
+    // 3) faillite
+    if (G.s.treso <= CONFIG.BANKRUPTCY) { this.setEnding(G, 'faillite'); return sum; }
+    // 4) chute du régime
+    const r = this.risks(G);
+    if (G.turn >= CONFIG.GRACE) {
+      const order = [['coup', r.coup], ['revolution', r.revolution], ['destitution', r.destitution], ['sanctions', r.sanctions]];
+      for (const [id, p] of order) if (p > 0 && G.rng() < p) { this.setEnding(G, id); return sum; }
+    }
+    // 5) avertissements
+    sum.warnings = this.warnings(G);
+    for (const w of sum.warnings) this.log(G, 'warn-e', w);
+    // indices sur la dérive cachée
+    const d = G.s.derive;
+    if (d >= 25 && G.rng() < 0.25) {
+      const h = d >= 60 ? 'La presse étrangère parle ouvertement de « régime autoritaire ».' : d >= 40 ? 'Des diplomates évoquent en privé une « inquiétante dérive » de votre gouvernement.' : 'Quelques éditorialistes s’interrogent sur « la pente » que prend votre gouvernement.';
+      sum.hints.push(h); this.log(G, 'info', h);
+    }
+    G.history.push(Object.assign({ turn: G.turn }, G.s));
+    // 6) élection
+    if (G.turn >= CONFIG.TURNS) sum.election = this.election(G);
+    return sum;
+  },
+
+  warnings(G) {
+    const r = this.risks(G), s = G.s, w = [];
+    if (r.revolution > 0) w.push(r.revolution > 0.1 ? '🔥 Le pays est au bord de l’insurrection.' : '⚠ La colère populaire gronde.');
+    if (r.coup > 0) w.push(r.coup > 0.1 ? '🎖 Des rumeurs insistantes de putsch circulent.' : '⚠ L’armée s’agite dans les casernes.');
+    if (r.destitution > 0) w.push('⚖ Le Parlement évoque une procédure de destitution.');
+    if (r.sanctions > 0) w.push('🌍 Des sanctions internationales sont à l’étude.');
+    if (s.treso < -35) w.push('💸 Les créanciers s’affolent : la faillite menace.');
+    return w;
+  },
+
+  /** Élection présidentielle (ou son absence…). */
+  election(G) {
+    const s = G.s;
+    // Élections reportées : survie du régime ?
+    if (G.flags.postponed) {
+      const surv = clamp(0.25 + s.derive / 200 + (s.secu - 50) / 100 + (G.flags.mediaControl ? 0.15 : 0) + (G.flags.armyLoyal ? 0.1 : 0) - Math.max(0, 40 - s.pop) / 100, 0.05, 0.9);
+      this.setEnding(G, G.rng() < surv ? 'autocrate' : (s.inst < 30 ? 'coup' : 'revolution'));
+      return { postponed: true };
+    }
+    const base = this.voteEstimate(G);
+    let v = base + s.bonus + (G.rng() * 8 - 4);
+    let fraudFound = false;
+    if (G.flags.fraud && G.rng() < disc(G, 0.25)) { fraudFound = true; v -= 14; }
+    v = clamp(v, 3, 97);
+    const result = { vote: v, fraudFound };
+    G.electionResult = result;
+    if (v >= CONFIG.WIN_THRESHOLD) {
+      if (fraudFound && G.rng() < 0.35 + (s.pop < 45 ? 0.3 : 0)) { this.setEnding(G, 'revolution'); result.revolt = true; }
+      else this.setEnding(G, (s.derive >= 35 || G.flags.fraud) ? 'reelu_entache' : 'reelu');
+    } else {
+      // Défaite : le joueur doit décider s'il reconnaît le résultat
+      G.pending = [this.resolveCard(G, CONTEST_EVENT)];
+      G.idx = 0;
+      result.contest = true;
+    }
+    return result;
+  },
+
+  setEnding(G, id) { if (!G.ending) { G.ending = { id }; G.ending.score = computeScore(G); } },
+};
+
+/** Carte spéciale : soir de défaite. */
+const CONTEST_EVENT = {
+  id: 'contest', cat: 'Soir d’élection', title: 'Les urnes ont parlé',
+  text: G => `Les résultats tombent : ${round(G.electionResult.vote)} % pour vous. Votre adversaire l’emporte.${G.electionResult.fraudFound ? ' Pire : des observateurs ont documenté des fraudes en votre faveur.' : ''} Votre directeur de campagne vous tend deux discours. L’un commence par « Je félicite… », l’autre par « Je refuse… ».`,
+  choices: [
+    { label: 'Reconnaître la défaite et féliciter votre adversaire', fx: {}, run(G) { G.tmp.endNow = 'defaite'; },
+      out: 'Vous prononcez un discours digne. La passation de pouvoir aura lieu dans le calme.' },
+    { label: 'Demander un recomptage', cond: (s, G) => G.electionResult.vote >= 47, fx: {},
+      run(G, res) { if (G.rng() < 0.3) { G.tmp.endNow = 'reelu'; res.extra = 'Le recomptage inverse le résultat ! Vous êtes réélu d’une courte tête.'; } else { G.tmp.endNow = 'defaite'; res.extra = 'Le recomptage confirme votre défaite.'; } },
+      out: 'Les bulletins sont recomptés un par un, sous l’œil des caméras.' },
+    { label: 'Refuser les résultats et rester au pouvoir', fx: {}, auth: true,
+      run(G, res) {
+        const s = G.s;
+        const p = clamp(s.derive / 100 * 0.8 + (G.flags.mediaControl ? 0.15 : 0) + (s.secu > 60 ? 0.1 : 0) + (G.flags.armyLoyal ? 0.1 : 0) - s.inst / 250, 0.02, 0.85);
+        if (G.rng() < p) { G.tmp.endNow = 'autocrate'; res.extra = 'L’armée vous soutient. La Cour suprême « constate des irrégularités ». Vous restez.'; }
+        else if (s.derive > 35) { G.tmp.endNow = 'revolution'; res.extra = 'La rue se soulève. Personne ne vous suit.'; }
+        else { G.tmp.endNow = 'defaite_amere'; res.extra = 'Personne ne vous suit : ni l’armée, ni les juges, ni même votre parti. Vous quittez le palais sous les huées.'; }
+      },
+      out: 'Vous annoncez que vous « ne reconnaissez pas ce scrutin entaché d’irrégularités ».' },
+  ],
+};
+
+/* ---------------------------------------------------------------------
+   6. FINS DE PARTIE & SCORE
+   --------------------------------------------------------------------- */
+const ENDINGS = {
+  reelu: { kind: 'win', kicker: 'Réélection démocratique', title: 'Le peuple vous renouvelle sa confiance',
+    text: G => `${G.leader} est réélu à la tête de la ${G.country}, au terme d’un scrutin libre et transparent. Votre adversaire vous félicite avant minuit. Les observateurs internationaux n’ont rien à signaler, ce qui est la meilleure des nouvelles. Quatre années de plus… et tout recommence.` },
+  reelu_entache: { kind: 'mixed', kicker: 'Victoire entachée', title: 'Réélu… mais à quel prix ?',
+    text: G => `${G.leader} conserve le pouvoir. Les chiffres officiels sont sans appel ; les observateurs internationaux, eux, sont plus réservés. Les chancelleries envoient des félicitations du bout des lèvres. La ${G.country} reste une démocratie, sur le papier.` },
+  defaite: { kind: 'lose', kicker: 'Défaite électorale', title: 'Une sortie honorable',
+    text: G => `Les électeurs ont choisi l’alternance. ${G.leader} félicite son adversaire et quitte le palais la tête haute. La démocratie a fonctionné, même si cela vous a coûté votre poste. On vous proposera sans doute des conférences très bien payées.` },
+  defaite_amere: { kind: 'lose', kicker: 'Défaite électorale', title: 'Un départ sous les huées',
+    text: G => `Votre refus de reconnaître le scrutin n’a convaincu personne. Lâché par votre propre camp, ${G.leader} quitte le palais par la porte de service. Les historiens retiendront surtout ces derniers jours.` },
+  autocrate: { kind: 'dark', kicker: 'Président à vie', title: 'La démocratie, c’était surtout un nom',
+    text: G => `${G.leader} reste au pouvoir, sans l’onction des urnes. Les opposants s’exilent, les journaux se taisent, les statues se multiplient. La ${G.country} rejoint la longue liste des « démocraties » qui n’en ont plus que le nom. Vous avez gagné. Le pays, lui, a perdu.` },
+  coup: { kind: 'fall', kicker: 'Chute du régime', title: 'Coup d’État',
+    text: G => `À l’aube, des blindés encerclent le palais présidentiel. Un colonel lit un communiqué à la télévision : « face au chaos », l’armée « assume ses responsabilités ». ${G.leader} part en exil avec une valise et quelques regrets.` },
+  revolution: { kind: 'fall', kicker: 'Chute du régime', title: 'Révolution',
+    text: G => `La place centrale est noire de monde. Les forces de l’ordre refusent de tirer, puis rejoignent les manifestants. ${G.leader} s’enfuit en hélicoptère, sous les yeux des caméras du monde entier. Le palais est ouvert au public le lendemain.` },
+  destitution: { kind: 'fall', kicker: 'Chute du régime', title: 'Destitution',
+    text: G => `Les affaires de corruption étaient trop nombreuses. Le Parlement, soutenu par une justice indépendante, vote la destitution de ${G.leader}. Ironie de l’histoire : ce sont les institutions démocratiques qui vous ont fait tomber.` },
+  faillite: { kind: 'fall', kicker: 'Chute du régime', title: 'Banqueroute',
+    text: G => `Les caisses sont vides, les créanciers ne prêtent plus, les fonctionnaires ne sont plus payés. Un gouvernement d’union nationale, adoubé par le FMI, prend les commandes de la ${G.country}. ${G.leader} démissionne « pour raisons de santé ».` },
+  sanctions: { kind: 'fall', kicker: 'Chute du régime', title: 'Asphyxie internationale',
+    text: G => `Gel des avoirs, embargo, isolement diplomatique : les sanctions étranglent l’économie. Vos propres alliés négocient votre départ en échange de la levée des mesures. ${G.leader} s’exile dans le seul pays qui accepte encore de l’accueillir.` },
+};
+const ENDING_BONUS = { reelu: 500, reelu_entache: 220, defaite: 150, defaite_amere: 30, autocrate: 60, coup: -50, revolution: -50, destitution: -30, faillite: -50, sanctions: -50 };
+
+/** Score final : bilan moyen + mois au pouvoir + finances + fin obtenue − dérive. */
+function computeScore(G) {
+  const s = G.s;
+  const avg = (s.pop + s.eco + s.secu + s.lib + s.integ + s.intl + s.inst) / 7;
+  const sc = avg * 10 + G.turn * 6 + clamp(s.treso, -60, 60) * 2 + (ENDING_BONUS[G.ending.id] || 0) - s.derive * 5;
+  return Math.max(0, round(sc));
+}
+function rankOf(score, endId) {
+  if (endId === 'reelu' && score >= 1350) return 'Père ou mère de la Nation';
+  if (endId === 'reelu') return 'Démocrate accompli';
+  if (endId === 'reelu_entache') return 'Habile manœuvrier';
+  if (endId === 'defaite') return score >= 1000 ? 'Incompris de son vivant' : 'Honnête perdant';
+  if (endId === 'autocrate') return 'Tyran d’opérette';
+  if (endId === 'defaite_amere') return 'Mauvais perdant';
+  return score >= 500 ? 'Victime des circonstances' : 'Note de bas de page des manuels d’histoire';
+}
+
+/* ---------------------------------------------------------------------
+   7. INTERFACE (DOM)
+   --------------------------------------------------------------------- */
+const UI = {
+  G: null,
+  phase: 'idle',   // 'event' | 'result' | 'summary' | 'end'
+  prev: null,      // valeurs précédentes pour animer les deltas
+
+  $(id) { return document.getElementById(id); },
+
+  init() {
+    this.$('btn-start').onclick = () => this.start();
+    this.$('btn-quit').onclick = () => { if (confirm('Abandonner la partie et revenir à l’écran titre ?')) this.show('title'); };
+    this.$('toggle-advisor').onchange = () => { if (this.phase === 'event') this.renderCard(); };
+    document.querySelectorAll('#diff-group input').forEach(inp => inp.onchange = () => {
+      document.querySelectorAll('#diff-group label').forEach(l => l.classList.toggle('sel', l.contains(inp) && inp.checked));
+    });
+    document.addEventListener('keydown', e => this.onKey(e));
+    this.showBest();
+  },
+
+  showBest() {
+    let best = 0;
+    try { best = +localStorage.getItem('democratie_best') || 0; } catch (e) {}
+    this.$('best-score').textContent = best ? `Meilleur score : ${best}` : '';
+  },
+
+  show(name) {
+    ['title', 'game', 'end'].forEach(n => this.$('screen-' + n).classList.toggle('hidden', n !== name));
+    if (name === 'title') this.showBest();
+    window.scrollTo(0, 0);
+  },
+
+  start() {
+    const diff = document.querySelector('#diff-group input:checked').value;
+    this.G = Engine.create({
+      leader: this.$('in-leader').value.trim() || 'Camille Duval',
+      country: this.$('in-country').value.trim() || 'République de Valmérie',
+      difficulty: diff,
+    });
+    this.prev = null;
+    this.$('journal').innerHTML = '';
+    this.$('hdr-country').textContent = `${this.G.leader} — ${this.G.country} · ${this.G.diff.label}`;
+    this.show('game');
+    Engine.log(this.G, 'info', `${this.G.leader} prête serment. Le mandat commence.`);
+    this.nextMonth();
+  },
+
+  /* ---------- Déroulement ---------- */
+  nextMonth() {
+    Engine.beginMonth(this.G);
+    this.renderHeader();
+    this.renderDashboard();
+    this.renderJournal();
+    this.phase = 'event';
+    this.renderCard();
+  },
+
+  pick(i) {
+    if (this.phase !== 'event') return;
+    const res = Engine.choose(this.G, i);
+    this.lastRes = res;
+    this.phase = 'result';
+    this.renderDashboard(true);
+    this.renderJournal();
+    this.renderResult(res);
+  },
+
+  continueAfterResult() {
+    const G = this.G;
+    if (G.ending) return this.showEnd();
+    if (G.idx < G.pending.length) { this.phase = 'event'; this.renderCard(); return; }
+    const sum = Engine.endMonth(G);
+    this.renderDashboard(true);
+    this.renderJournal();
+    if (G.ending) return sum.election ? this.renderElection(sum.election) : this.showEnd();
+    if (sum.election && sum.election.contest) return this.renderElection(sum.election);
+    if (sum.delayed.length || sum.warnings.length || sum.hints.length) { this.phase = 'summary'; this.renderSummary(sum); }
+    else this.nextMonth();
+  },
+
+  onKey(e) {
+    if (this.$('screen-game').classList.contains('hidden')) return;
+    if (e.target.tagName === 'INPUT') return;
+    if (this.phase === 'event' && /^[1-4]$/.test(e.key)) {
+      const c = Engine.currentCard(this.G);
+      const i = +e.key - 1;
+      if (c && i < c.choices.length) this.pick(i);
+    } else if ((this.phase === 'result' || this.phase === 'summary' || this.phase === 'election') && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      const b = document.querySelector('#card-zone .card-actions .btn');
+      if (b) b.click();
+    }
+  },
+
+  /* ---------- Rendu : en-tête ---------- */
+  renderHeader() {
+    const G = this.G, t = G.turn;
+    const m = MONTHS[(t - 1) % 12], y = Math.floor((t - 1) / 12) + 1;
+    this.$('hdr-date').textContent = `${m} — An ${y}`;
+    this.$('hdr-turn').textContent = t >= CONFIG.TURNS ? 'Mois 48 / 48 — mois de l’élection' : `Mois ${t} / ${CONFIG.TURNS}`;
+    this.$('hdr-progress').style.width = (t / CONFIG.TURNS * 100) + '%';
+  },
+
+  /* ---------- Rendu : tableau de bord ---------- */
+  gaugeColor(v, inverse) {
+    const x = inverse ? 100 - v : v;
+    return x < 30 ? 'var(--bad)' : x < 50 ? 'var(--mid)' : 'var(--good)';
+  },
+
+  gaugeHTML(key, label, icon, value, pct, color, delta, zero, valText) {
+    const d = delta && Math.abs(delta) >= 0.5 ? `<span class="delta show ${delta > 0 ? (key === 'opp' ? 'down' : 'up') : (key === 'opp' ? 'up' : 'down')}">${delta > 0 ? '+' : ''}${round(delta)}</span>` : '';
+    return `<div class="gauge"><div class="gauge-head"><span>${icon} ${label}</span><span><span class="val">${valText}</span>${d}</span></div>
+      <div class="bar${zero ? ' zero' : ''}"><div style="width:${pct}%;background:${color}"></div></div></div>`;
+  },
+
+  renderDashboard(withDelta) {
+    const G = this.G, s = G.s, prev = withDelta && this.prev ? this.prev : null;
+    let html = '';
+    for (const ind of INDICATORS) {
+      const v = s[ind.key], dv = prev ? v - prev[ind.key] : 0;
+      if (ind.money) {
+        const pct = clamp((v + 60) / 120 * 100, 0, 100);
+        const col = v < -20 ? 'var(--bad)' : v < 0 ? 'var(--mid)' : 'var(--good)';
+        html += this.gaugeHTML(ind.key, ind.label, ind.icon, v, pct, col, dv, true, `${v >= 0 ? '+' : ''}${round(v)} Md`);
+      } else {
+        html += this.gaugeHTML(ind.key, ind.label, ind.icon, v, v, this.gaugeColor(v), dv, false, round(v));
+      }
+    }
+    this.$('gauges').innerHTML = html;
+    const dOpp = prev ? s.opp - prev.opp : 0;
+    this.$('opp-gauge').innerHTML = this.gaugeHTML('opp', 'Force de l’opposition', '📣', s.opp, s.opp, this.gaugeColor(s.opp, true), dOpp, false, round(s.opp));
+    // Sondage (légèrement bruité, comme tous les sondages)
+    const est = clamp(Engine.voteEstimate(G), 5, 95);
+    const me = round(est);
+    this.$('poll').innerHTML = `<div class="row"><b>Sondage présidentiel</b><span>${G.turn >= 40 ? 'intentions de vote' : 'si l’élection avait lieu…'}</span></div>
+      <div class="split"><div class="me" style="width:${me}%"></div><div class="them" style="width:${100 - me}%"></div></div>
+      <div class="row"><span>Vous : <b>${me} %</b></span><span>Opposition : <b>${100 - me} %</b></span></div>`;
+    this.$('campaign-val').textContent = round(s.campaign);
+    this.$('warnings').innerHTML = Engine.warnings(G).map(w => `<div class="warn">${w}</div>`).join('');
+    this.prev = Object.assign({}, s);
+  },
+
+  /* ---------- Rendu : journal ---------- */
+  chipsHTML(deltas) {
+    if (!deltas) return '';
+    const keys = VISIBLE_KEYS.filter(k => deltas[k] && Math.abs(deltas[k]) >= 0.5);
+    if (!keys.length) return '';
+    return `<div class="chips">${keys.map(k => {
+      const v = deltas[k], good = BAD_WHEN_UP[k] ? v < 0 : v > 0;
+      return `<span class="chip ${good ? 'up' : 'down'}">${ICONS[k]} ${LABELS[k]} ${v > 0 ? '+' : ''}${round(v)}</span>`;
+    }).join('')}</div>`;
+  },
+
+  renderJournal() {
+    const G = this.G;
+    const items = G.log.slice().reverse().map(e => {
+      const m = e.turn ? `${MONTHS[(e.turn - 1) % 12]} An ${Math.floor((e.turn - 1) / 12) + 1}` : 'Investiture';
+      return `<div class="entry ${e.type === 'conseq' ? 'conseq' : e.type}"><div class="when">${m}</div><div class="txt">${e.text}</div>${this.chipsHTML(e.deltas)}</div>`;
+    }).join('');
+    this.$('journal').innerHTML = items;
+    this.$('journal-count').textContent = `${G.stats.decisions} décisions`;
+  },
+
+  /* ---------- Rendu : carte d'événement ---------- */
+  advisorHint(fx) {
+    if (!this.$('toggle-advisor').checked || !fx) return '';
+    const parts = [];
+    for (const k of VISIBLE_KEYS) {
+      const v = fx[k];
+      if (!v) continue;
+      const good = BAD_WHEN_UP[k] ? v < 0 : v > 0;
+      const strong = Math.abs(v) >= 8 ? (v > 0 ? '▲▲' : '▼▼') : (v > 0 ? '▲' : '▼');
+      parts.push(`<span class="${good ? 'u' : 'd'}">${ICONS[k]}${strong}</span>`);
+    }
+    return parts.length ? `<span class="hint">${parts.join(' &nbsp;')}</span>` : `<span class="hint">Effets incertains…</span>`;
+  },
+
+  renderCard() {
+    const G = this.G, c = Engine.currentCard(G);
+    const n = G.pending.length;
+    this.$('card-zone').innerHTML = `
+      <article class="card">
+        <div class="card-head"><span class="cat">${c.cat}</span><span class="counter">Dossier ${G.idx + 1} / ${n}</span></div>
+        <div class="card-body">
+          <h2>${c.title}</h2>
+          <p class="card-text">${c.text}</p>
+          <div class="choices">
+            ${c.choices.map((ch, i) => `<button class="choice" data-i="${i}"><span class="key">${i + 1}</span><span><span class="lbl">${ch.label}</span>${this.advisorHint(ch.fx)}</span></button>`).join('')}
+          </div>
+        </div>
+      </article>`;
+    this.$('card-zone').querySelectorAll('.choice').forEach(b => b.onclick = () => this.pick(+b.dataset.i));
+  },
+
+  renderResult(res) {
+    const G = this.G;
+    const last = G.idx >= G.pending.length;
+    const btn = G.ending ? 'Voir le bilan' : (last ? (G.turn >= CONFIG.TURNS ? 'Aller aux urnes 🗳️' : 'Clore le mois ▸') : 'Dossier suivant ▸');
+    this.$('card-zone').innerHTML = `
+      <article class="card">
+        <div class="card-head"><span class="cat">${res.card.cat}</span><span class="counter">Décision prise</span></div>
+        <div class="card-body">
+          <h2>${res.card.title}</h2>
+          <p class="outcome">${res.out}${res.extra ? ' ' + res.extra : ''}</p>
+          ${res.riskMsg ? `<p class="outcome alert">⚠ ${res.riskMsg}</p>` : ''}
+          ${this.chipsHTML(res.deltas) || '<p class="later-note">Pas d’effet visible immédiat.</p>'}
+          ${res.later ? '<p class="later-note">⏳ Cette décision aura des répercussions dans les mois à venir.</p>' : ''}
+          <div class="card-actions"><button class="btn btn-primary">${btn}</button></div>
+        </div>
+      </article>`;
+    this.$('card-zone').querySelector('.card-actions .btn').onclick = () => this.continueAfterResult();
+  },
+
+  renderSummary(sum) {
+    const G = this.G;
+    const li = [];
+    for (const d of sum.delayed) li.push(`<li>⏳ ${d.msg}${this.chipsHTML(d.deltas)}</li>`);
+    for (const h of sum.hints) li.push(`<li><i>🗞️ ${h}</i></li>`);
+    for (const w of sum.warnings) li.push(`<li style="color:#8d2a20">${w}</li>`);
+    this.$('card-zone').innerHTML = `
+      <article class="card">
+        <div class="card-head"><span class="cat">Fin du mois</span><span class="counter">${MONTHS[(G.turn - 1) % 12]}</span></div>
+        <div class="card-body">
+          <h2>Bilan du mois</h2>
+          <ul class="summary-list">${li.join('')}</ul>
+          <div class="card-actions"><button class="btn btn-primary">Mois suivant ▸</button></div>
+        </div>
+      </article>`;
+    this.$('card-zone').querySelector('.card-actions .btn').onclick = () => this.nextMonth();
+  },
+
+  renderElection(el) {
+    const G = this.G;
+    this.phase = 'election';
+    if (el.postponed) {
+      this.$('card-zone').innerHTML = `<article class="card"><div class="card-head"><span class="cat">Élection</span><span class="counter">Reportée</span></div>
+        <div class="card-body"><h2>Le jour où l’élection n’a pas eu lieu</h2><p class="card-text">La date prévue pour l’élection présidentielle passe sans bureaux de vote. Dans la capitale, la tension est à son comble. Tout dépend maintenant de la loyauté de l’armée… et de la patience du peuple.</p>
+        <div class="card-actions"><button class="btn btn-red">Découvrir votre sort</button></div></div></article>`;
+      this.$('card-zone').querySelector('.btn').onclick = () => this.showEnd();
+      return;
+    }
+    const v = round(el.vote);
+    const won = !!G.ending && ['reelu', 'reelu_entache'].includes(G.ending.id);
+    this.$('card-zone').innerHTML = `<article class="card"><div class="card-head"><span class="cat">Soir d’élection</span><span class="counter">20 h 00</span></div>
+      <div class="card-body"><h2>Les résultats tombent…</h2>
+      <div class="vote-bar"><div style="width:50%;background:var(--navy-3)" id="vb-me">…</div><div style="width:50%;background:var(--red)" id="vb-them">…</div></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted)"><span>${G.leader}</span><span>Opposition</span></div>
+      <p class="card-text" style="margin-top:14px">${el.fraudFound ? '⚠ Des observateurs indépendants ont mis au jour des fraudes massives en votre faveur. ' : ''}${el.revolt ? 'La fraude révélée met le feu aux poudres : la foule envahit les rues.' : won ? 'Les premières estimations vous donnent vainqueur.' : 'Les premières estimations donnent l’opposition gagnante.'}</p>
+      <div class="card-actions"><button class="btn btn-primary">${G.ending ? 'Voir le bilan' : 'Réagir'}</button></div></div></article>`;
+    setTimeout(() => {
+      const a = this.$('vb-me'), b = this.$('vb-them');
+      if (!a) return;
+      a.style.width = v + '%'; b.style.width = (100 - v) + '%';
+      a.textContent = v + ' %'; b.textContent = (100 - v) + ' %';
+    }, 150);
+    this.$('card-zone').querySelector('.card-actions .btn').onclick = () => {
+      if (G.ending) this.showEnd();
+      else { this.phase = 'event'; this.renderCard(); }
+    };
+  },
+
+  /* ---------- Écran de fin ---------- */
+  showEnd() {
+    const G = this.G, E = ENDINGS[G.ending.id], s = G.s;
+    this.phase = 'end';
+    const score = G.ending.score;
+    let best = 0;
+    try { best = +localStorage.getItem('democratie_best') || 0; if (score > best) localStorage.setItem('democratie_best', score); } catch (e) {}
+    const color = { win: 'var(--good)', mixed: 'var(--mid)', lose: 'var(--navy-3)', dark: 'var(--red)', fall: 'var(--red)' }[E.kind];
+    const deriveTxt = s.derive < 15 ? 'Exemplaire. Vous avez respecté les règles du jeu démocratique.' :
+      s.derive < 35 ? 'Quelques entorses, rien d’irréparable… en apparence.' :
+      s.derive < 60 ? 'Inquiétante. Vous avez sérieusement abîmé les institutions.' : 'Massive. La démocratie n’était plus qu’une façade.';
+    const stat = (label, val) => `<div class="end-stat">${label}<b>${val}</b></div>`;
+    this.$('end-content').innerHTML = `
+      <div class="end-kicker" style="color:${color}">${E.kicker}</div>
+      <h1 style="color:var(--navy)">${E.title}</h1>
+      <p class="end-text">${E.text(G)}</p>
+      <div class="score-box"><div><div style="font-size:13px;opacity:.8">Score final</div><div class="score">${score}</div></div>
+        <div style="text-align:right"><div style="font-size:13px;opacity:.8">Votre place dans l’histoire</div><div class="rank">« ${rankOf(score, G.ending.id)} »</div>${score > best && best ? '<div style="font-size:13px">🏆 Nouveau record !</div>' : ''}</div></div>
+      <div class="secret">🔒 <b>Révélation — Dérive autoritaire (jauge cachée) : ${round(s.derive)} / 100.</b> ${deriveTxt}</div>
+      <div class="end-grid">
+        ${stat('Mois au pouvoir', `${G.turn} / ${CONFIG.TURNS}`)}
+        ${G.electionResult ? stat('Score électoral', round(G.electionResult.vote) + ' %') : ''}
+        ${stat('👥 Popularité', round(s.pop))}
+        ${stat('📈 Économie', round(s.eco))}
+        ${stat('🛡️ Sécurité', round(s.secu))}
+        ${stat('🗽 Libertés', round(s.lib))}
+        ${stat('⚖️ Intégrité', round(s.integ))}
+        ${stat('🌍 Crédibilité int.', round(s.intl))}
+        ${stat('🏛️ Institutions', round(s.inst))}
+        ${stat('💰 Trésorerie', round(s.treso) + ' Md')}
+        ${stat('📣 Opposition', round(s.opp))}
+        ${stat('Décisions prises', G.stats.decisions)}
+        ${stat('Mesures autoritaires', G.stats.auth)}
+        ${stat('Paris perdus', G.stats.risks)}
+      </div>
+      <div class="title-actions"><span class="best">Difficulté : ${G.diff.label}</span>
+        <div style="display:flex;gap:10px"><button class="btn btn-ghost" id="btn-menu">Écran titre</button><button class="btn btn-red" id="btn-replay">Rejouer ↻</button></div></div>`;
+    this.$('btn-replay').onclick = () => this.start();
+    this.$('btn-menu').onclick = () => this.show('title');
+    this.show('end');
+  },
+};
+
+if (typeof document !== 'undefined') UI.init();
+</script>
+</body>
+</html>
